@@ -1,0 +1,11 @@
+bot\wodibot\game\GameState.class
+bot\wodibot\word\WordService$WordPair.class
+bot\wodibot\game\GameRoom.class
+bot\wodibot\word\WordService.class
+bot\wodibot\game\GameConfig.class
+bot\wodibot\MainBot.class
+bot\wodibot\utils\BotUtils.class
+bot\wodibot\utils\GameLogger.class
+bot\wodibot\BotConfig.class
+bot\wodibot\word\WordReloadTask.class
+bot\wodibot\model\Player.class
