@@ -73,26 +73,6 @@ public class BotConfig {
                 System.err.println("⚠️ 未配置管理员ID");
             }
             
-            // 验证游戏配置
-            int maxPlayers = Integer.parseInt(props.getProperty("game.max.players", "12"));
-            int minPlayers = Integer.parseInt(props.getProperty("game.min.players", "3"));
-            
-            if (minPlayers < 2) {
-                System.err.println("❌ 最小玩家数不能小于2，调整为2");
-                props.setProperty("game.min.players", "2");
-                minPlayers = 2;
-            }
-            
-            if (maxPlayers > 20) {
-                System.err.println("⚠️ 最大玩家数超过20，可能影响性能");
-            }
-            
-            if (minPlayers >= maxPlayers) {
-                System.err.println("❌ 最小玩家数应小于最大玩家数，调整配置");
-                props.setProperty("game.min.players", "3");
-                props.setProperty("game.max.players", "12");
-            }
-            
             // 验证时间配置
             int speakingTime = Integer.parseInt(props.getProperty("game.speaking.time", "60"));
             int votingTime = Integer.parseInt(props.getProperty("game.voting.time", "30"));
