@@ -1,8 +1,10 @@
 package bot.wodibot.utils;
 
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.bots.AbsSender;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import java.util.List;
 
 public class BotUtils {
     
@@ -42,6 +44,82 @@ public class BotUtils {
         } catch (Exception e) {
             System.err.println("❌ 发送消息时发生未知错误: " + e.getMessage());
         }
+    }
+    
+    /**
+     * 发送消息并返回消息ID
+     */
+    public static Integer sendMessageWithId(AbsSender bot, long chatId, String text) {
+        return sendMessageWithId(bot, chatId, text, "Markdown");
+    }
+    
+    /**
+     * 发送消息并返回消息ID
+     */
+    public static Integer sendMessageWithId(AbsSender bot, long chatId, String text, String parseMode) {
+        try {
+            SendMessage message = new SendMessage();
+            message.setChatId(String.valueOf(chatId));
+            message.setText(text);
+            if (parseMode != null) {
+                message.setParseMode(parseMode);
+            }
+            org.telegram.telegrambots.meta.api.objects.Message sentMessage = bot.execute(message);
+            
+            // 日志（截断长消息）
+            String logText = text.length() > 50 ? text.substring(0, 50) + "..." : text;
+            System.out.println("📤 发送消息到 " + chatId + ": " + logText + " (ID: " + sentMessage.getMessageId() + ")");
+            
+            return sentMessage.getMessageId();
+        } catch (TelegramApiException e) {
+            System.err.println("❌ 发送消息失败: " + e.getMessage());
+            return null;
+        } catch (Exception e) {
+            System.err.println("❌ 发送消息时发生未知错误: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * 删除消息
+     */
+    public static boolean deleteMessage(AbsSender bot, long chatId, int messageId) {
+        try {
+            DeleteMessage deleteMessage = new DeleteMessage();
+            deleteMessage.setChatId(String.valueOf(chatId));
+            deleteMessage.setMessageId(messageId);
+            
+            bot.execute(deleteMessage);
+            System.out.println("🗑️ 删除消息 " + chatId + ":" + messageId);
+            return true;
+        } catch (TelegramApiException e) {
+            // 如果消息已经被删除或其他错误，忽略
+            System.err.println("⚠️ 删除消息失败: " + e.getMessage());
+            return false;
+        } catch (Exception e) {
+            System.err.println("❌ 删除消息时发生未知错误: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * 批量删除消息
+     */
+    public static void deleteMessages(AbsSender bot, long chatId, List<Integer> messageIds) {
+        if (messageIds == null || messageIds.isEmpty()) {
+            return;
+        }
+        
+        System.out.println("🗑️ 开始批量删除 " + messageIds.size() + " 条消息");
+        int deletedCount = 0;
+        
+        for (Integer messageId : messageIds) {
+            if (deleteMessage(bot, chatId, messageId)) {
+                deletedCount++;
+            }
+        }
+        
+        System.out.println("🗑️ 成功删除 " + deletedCount + "/" + messageIds.size() + " 条消息");
     }
     
     /**

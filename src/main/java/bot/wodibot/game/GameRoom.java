@@ -5,6 +5,7 @@ import bot.wodibot.model.Player;
 import bot.wodibot.utils.BotUtils;
 import bot.wodibot.utils.GameLogger;
 import bot.wodibot.word.WordService;
+import bot.wodibot.stats.StatsService;
 
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -16,8 +17,6 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 
 import java.util.*;
 import java.util.concurrent.*;
-import bot.wodibot.stats.StatsService;
-import bot.wodibot.model.PlayerStats;;
 
 public class GameRoom {
 
@@ -38,6 +37,9 @@ public class GameRoom {
 
     private Integer joinMessageId;
     private final List<String> gameLog = new ArrayList<>();
+    
+    // 存储机器人发送的消息ID，用于游戏开始时的清理
+    private final List<Integer> botMessageIds = new ArrayList<>();
 
     // 敏感词列表（简单示例，实际应该从配置文件加载）
     private static final String[] SENSITIVE_WORDS = {
@@ -55,6 +57,49 @@ public class GameRoom {
         this.chatId = chatId;
         this.config = config;
         GameLogger.logGame(chatId, "游戏房间已创建（自定义配置）");
+    }
+
+    /* ================= 消息管理方法 ================= */
+
+    /**
+     * 记录机器人发送的消息ID
+     */
+    private void recordBotMessageId(Integer messageId) {
+        if (messageId != null && !botMessageIds.contains(messageId)) {
+            botMessageIds.add(messageId);
+        }
+    }
+    
+    /**
+     * 清除所有机器人消息
+     */
+    private void clearAllBotMessages(AbsSender bot) {
+        if (botMessageIds.isEmpty()) {
+            return;
+        }
+        
+        GameLogger.logGame(chatId, "开始清理机器人所有消息，共" + botMessageIds.size() + "条");
+        
+        // 复制列表以避免并发修改
+        List<Integer> messagesToDelete = new ArrayList<>(botMessageIds);
+        
+        // 批量删除消息
+        BotUtils.deleteMessages(bot, chatId, messagesToDelete);
+        
+        // 清空记录
+        botMessageIds.clear();
+        
+        GameLogger.logGame(chatId, "消息清理完成");
+    }
+    
+    /**
+     * 发送消息并记录ID
+     */
+    private void sendAndRecordMessage(AbsSender bot, String text) {
+        Integer messageId = BotUtils.sendMessageWithId(bot, chatId, text);
+        if (messageId != null) {
+            recordBotMessageId(messageId);
+        }
     }
 
     /* ================= 消息入口 ================= */
@@ -77,9 +122,11 @@ public class GameRoom {
 
         if ("/startgame".equals(text) || "/startgame@shuiwodi_bot".equals(text)) {
             if (state == GameState.IDLE || state == GameState.ENDED) {
+                // 开始新游戏前清理之前的所有机器人消息
+                clearAllBotMessages(bot);
                 start(bot);
             } else {
-                BotUtils.sendMessage(bot, chatId, "⚠️ 游戏正在进行中，请等待当前游戏结束");
+                sendAndRecordMessage(bot, "⚠️ 游戏正在进行中，请等待当前游戏结束");
             }
             return;
         }
@@ -133,12 +180,13 @@ public class GameRoom {
     public synchronized void onCallbackJoin(AbsSender bot, long userId, String userName,
             int messageId, CallbackQuery callbackQuery) {
         if (state != GameState.JOINING) {
-            BotUtils.sendMessage(bot, chatId, "⚠️ 游戏不在加入阶段");
+            sendAndRecordMessage(bot, "⚠️ 游戏不在加入阶段");
             return;
         }
 
         if (joinMessageId == null) {
             joinMessageId = messageId;
+            recordBotMessageId(messageId);
         }
 
         // 检查是否已加入
@@ -178,7 +226,7 @@ public class GameRoom {
             welcomeMessage = getRegularPlayerWelcomeMessage(playerNameWithBadge, rankDescription);
         }
 
-        BotUtils.sendMessage(bot, chatId, welcomeMessage);
+        sendAndRecordMessage(bot, welcomeMessage);
         updateJoinMessage(bot);
     }
 
@@ -241,13 +289,13 @@ public class GameRoom {
 
     public synchronized void onCallbackStart(AbsSender bot, long userId, int messageId) {
         if (state != GameState.JOINING) {
-            BotUtils.sendMessage(bot, chatId, "⚠️ 游戏不在加入阶段");
+            sendAndRecordMessage(bot, "⚠️ 游戏不在加入阶段");
             return;
         }
 
         Player player = players.get(userId);
         if (player == null) {
-            BotUtils.sendMessage(bot, chatId, "❌ 只有已加入的玩家才能开始游戏");
+            sendAndRecordMessage(bot, "❌ 只有已加入的玩家才能开始游戏");
             return;
         }
 
@@ -276,6 +324,7 @@ public class GameRoom {
         try {
             Message sentMessage = bot.execute(message);
             joinMessageId = sentMessage.getMessageId();
+            recordBotMessageId(sentMessage.getMessageId());
             GameLogger.logGame(chatId, "游戏开始招募玩家");
         } catch (Exception e) {
             GameLogger.logError(chatId, "发送消息失败: " + e.getMessage());
@@ -295,7 +344,7 @@ public class GameRoom {
 
     private void cancelGame(AbsSender bot) {
         if (state == GameState.IDLE || state == GameState.ENDED) {
-            BotUtils.sendMessage(bot, chatId, "⚠️ 没有进行中的游戏可以取消");
+            sendAndRecordMessage(bot, "⚠️ 没有进行中的游戏可以取消");
             return;
         }
 
@@ -304,7 +353,10 @@ public class GameRoom {
         votes.clear();
         state = GameState.ENDED;
 
-        BotUtils.sendMessage(bot, chatId, "🛑 游戏已取消");
+        // 清理所有机器人消息
+        clearAllBotMessages(bot);
+        
+        sendAndRecordMessage(bot, "🛑 游戏已取消");
         GameLogger.logGame(chatId, "游戏被用户取消");
     }
 
@@ -318,22 +370,7 @@ public class GameRoom {
         joinButton.setCallbackData("join_game");
         row1.add(joinButton);
 
-        List<InlineKeyboardButton> row2 = new ArrayList<>();
-        InlineKeyboardButton startButton = new InlineKeyboardButton();
-        startButton.setText("🚀 开始游戏 (" + players.size() + "/" + config.getMinPlayers() + ")");
-        startButton.setCallbackData("start_now");
-        row2.add(startButton);
-
-        // 添加取消按钮
-        List<InlineKeyboardButton> row3 = new ArrayList<>();
-        InlineKeyboardButton cancelButton = new InlineKeyboardButton();
-        cancelButton.setText("❌ 取消游戏");
-        cancelButton.setCallbackData("cancel_game");
-        row3.add(cancelButton);
-
         keyboard.add(row1);
-        keyboard.add(row2);
-        keyboard.add(row3);
         keyboardMarkup.setKeyboard(keyboard);
 
         return keyboardMarkup;
@@ -387,17 +424,19 @@ public class GameRoom {
 
     private void assign(AbsSender bot) {
         cancelAllTasks();
+        
+        // 清理加入阶段的所有消息
+        clearAllBotMessages(bot);
 
         if (players.size() < config.getMinPlayers()) {
-            BotUtils.sendMessage(bot, chatId,
-                    "❌ 人数不足（需要至少" + config.getMinPlayers() + "人），游戏取消");
+            sendAndRecordMessage(bot, "❌ 人数不足（需要至少" + config.getMinPlayers() + "人），游戏取消");
             state = GameState.ENDED;
             return;
         }
 
         WordService.WordPair pair = WordService.randomForChat(chatId);
         if (pair == null) {
-            BotUtils.sendMessage(bot, chatId, "❌ 词库加载失败，请稍后重试");
+            sendAndRecordMessage(bot, "❌ 词库加载失败，请稍后重试");
             state = GameState.ENDED;
             return;
         }
@@ -437,7 +476,7 @@ public class GameRoom {
             roleInfo.append("\n");
         }
 
-        BotUtils.sendMessage(bot, chatId, roleInfo.toString());
+        sendAndRecordMessage(bot, roleInfo.toString());
         GameLogger.logGame(chatId,
                 "身份分配完成，平民词: " + civilianWord + "，卧底词: " + undercoverWord +
                         "，卧底数: " + undercoverCount + "/" + players.size());
@@ -445,7 +484,7 @@ public class GameRoom {
         // 开始第一轮发言
         state = GameState.SPEAKING;
         sendSpeakingTips(bot);
-        BotUtils.sendMessage(bot, chatId,
+        sendAndRecordMessage(bot,
                 "🗣 发言阶段开始（" + config.getSpeakingTime() + "秒），请用 ( / 描述 ) 来发言");
 
         scheduleTask("speaking_timeout", () -> startVote(bot),
@@ -490,7 +529,7 @@ public class GameRoom {
         }
 
         if (isOver) {
-            BotUtils.sendMessage(bot, chatId, "✅ 所有玩家已完成发言");
+            sendAndRecordMessage(bot, "✅ 所有玩家已完成发言");
             cancelTask("speaking_timeout");
             startVote(bot);
         }
@@ -512,8 +551,8 @@ public class GameRoom {
         for (Player p : players.values()) {
             if (p.alive) {
                 // 使用带标识的名字
-            String playerNameWithBadge = StatsService.getPlayerNameWithBadge(p.userId, p.name);
-            sb.append(i).append("号 ").append(playerNameWithBadge).append(" - ");
+                String playerNameWithBadge = StatsService.getPlayerNameWithBadge(p.userId, p.name);
+                sb.append(i).append("号 ").append(playerNameWithBadge).append(" - ");
                 if (!BotUtils.isBlank(p.spoke)) {
                     sb.append(p.spoke);
                 } else {
@@ -529,7 +568,7 @@ public class GameRoom {
         sb.append("发送 `/数字` 或直接发送数字进行投票\n");
         sb.append("例如: `/1` 或 `1` 投票给1号玩家");
 
-        BotUtils.sendMessage(bot, chatId, sb.toString());
+        sendAndRecordMessage(bot, sb.toString());
         GameLogger.logGame(chatId, "第" + round + "轮投票开始");
 
         scheduleTask("voting_timeout", () -> finishVote(bot),
@@ -601,7 +640,7 @@ public class GameRoom {
             }
 
             if (votedCount == totalAlive) {
-                BotUtils.sendMessage(bot, chatId, "🎉 所有玩家已完成投票！正在计算结果...");
+                sendAndRecordMessage(bot, "🎉 所有玩家已完成投票！正在计算结果...");
                 cancelTask("voting_timeout");
                 scheduler.submit(() -> finishVote(bot));
             }
@@ -618,7 +657,7 @@ public class GameRoom {
         cancelAllTasks();
 
         if (votes.isEmpty()) {
-            BotUtils.sendMessage(bot, chatId, "⚠️ 本轮无人投票，重新发言");
+            sendAndRecordMessage(bot, "⚠️ 本轮无人投票，重新发言");
             resetRoundForNewSpeech();
             scheduleTask("speaking_timeout", () -> startVote(bot),
                     config.getSpeakingTime(), TimeUnit.SECONDS);
@@ -641,7 +680,7 @@ public class GameRoom {
         }
 
         if (count.isEmpty()) {
-            BotUtils.sendMessage(bot, chatId, "⚠️ 所有投票都投给了已淘汰玩家，重新发言");
+            sendAndRecordMessage(bot, "⚠️ 所有投票都投给了已淘汰玩家，重新发言");
             resetRoundForNewSpeech();
             scheduleTask("speaking_timeout", () -> startVote(bot),
                     config.getSpeakingTime(), TimeUnit.SECONDS);
@@ -671,7 +710,7 @@ public class GameRoom {
             }
             sb.append("重新发言");
 
-            BotUtils.sendMessage(bot, chatId, sb.toString());
+            sendAndRecordMessage(bot, sb.toString());
             GameLogger.logGame(chatId, "第" + round + "轮投票平票，重新发言");
 
             resetRoundForNewSpeech();
@@ -685,7 +724,7 @@ public class GameRoom {
         Player eliminatedPlayer = players.get(out);
         eliminatedPlayer.alive = false;
 
-        BotUtils.sendMessage(bot, chatId,
+        sendAndRecordMessage(bot,
                 "🚫 " + eliminatedPlayer.name + " 被淘汰（得票 " + max + "）");
         GameLogger.logGame(chatId,
                 eliminatedPlayer.name + " 被淘汰，身份: " +
@@ -714,7 +753,7 @@ public class GameRoom {
                 .count();
 
         if (aliveUndercover == 0) {
-            BotUtils.sendMessage(bot, chatId, "🎉 *平民胜利！*");
+            sendAndRecordMessage(bot, "🎉 *平民胜利！*");
             GameLogger.logGame(chatId, "游戏结束，平民胜利");
             showGameSummary(bot, false);
 
@@ -723,7 +762,7 @@ public class GameRoom {
 
             state = GameState.ENDED;
         } else if (aliveUndercover >= aliveCivilian) {
-            BotUtils.sendMessage(bot, chatId, "💀 *卧底胜利！*");
+            sendAndRecordMessage(bot, "💀 *卧底胜利！*");
             GameLogger.logGame(chatId, "游戏结束，卧底胜利");
             showGameSummary(bot, true);
 
@@ -738,7 +777,7 @@ public class GameRoom {
                 p.voted = false;
             });
             state = GameState.SPEAKING;
-            BotUtils.sendMessage(bot, chatId, "🔄 第 " + round + " 轮开始");
+            sendAndRecordMessage(bot, "🔄 第 " + round + " 轮开始");
             sendSpeakingTips(bot);
             scheduleTask("speaking_timeout", () -> startVote(bot),
                     config.getSpeakingTime(), TimeUnit.SECONDS);
@@ -818,7 +857,7 @@ public class GameRoom {
         summary.append("使用 /p 查看你的胜率\n");
         summary.append("使用 /ph 查看胜率排行榜");
 
-        BotUtils.sendMessage(bot, chatId, summary.toString());
+        sendAndRecordMessage(bot, summary.toString());
     }
 
     private void sendGameStatus(AbsSender bot) {
@@ -842,7 +881,7 @@ public class GameRoom {
             }
         }
 
-        BotUtils.sendMessage(bot, chatId, status.toString());
+        sendAndRecordMessage(bot, status.toString());
     }
 
     private void sendPlayerList(AbsSender bot) {
@@ -872,7 +911,7 @@ public class GameRoom {
         list.append("存活: ").append(aliveCount).append("\n");
         list.append("卧底: ").append(undercoverCount).append("\n");
 
-        BotUtils.sendMessage(bot, chatId, list.toString());
+        sendAndRecordMessage(bot, list.toString());
     }
 
     private void sendRules(AbsSender bot) {
@@ -894,7 +933,7 @@ public class GameRoom {
                 "• 投票: " + config.getVotingTime() + "秒\n" +
                 "• 加入: " + config.getJoinTime() + "秒";
 
-        BotUtils.sendMessage(bot, chatId, rules);
+        sendAndRecordMessage(bot, rules);
     }
 
     private void sendHelp(AbsSender bot) {
@@ -921,7 +960,7 @@ public class GameRoom {
                 "发言时间: " + config.getSpeakingTime() + "秒\n" +
                 "投票时间: " + config.getVotingTime() + "秒";
 
-        BotUtils.sendMessage(bot, chatId, helpText);
+        sendAndRecordMessage(bot, helpText);
     }
 
     private boolean containsSensitiveWord(String text) {

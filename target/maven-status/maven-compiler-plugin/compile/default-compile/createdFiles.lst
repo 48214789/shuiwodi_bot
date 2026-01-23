@@ -1,6 +1,8 @@
 bot\wodibot\game\GameState.class
+bot\wodibot\model\PlayerStats.class
 bot\wodibot\word\WordService$WordPair.class
 bot\wodibot\game\GameRoom.class
+bot\wodibot\stats\StatsService.class
 bot\wodibot\word\WordService.class
 bot\wodibot\game\GameConfig.class
 bot\wodibot\MainBot.class

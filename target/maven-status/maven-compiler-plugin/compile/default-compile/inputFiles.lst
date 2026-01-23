@@ -5,6 +5,8 @@ E:\tg-undercover-bot\src\main\java\bot\wodibot\utils\BotUtils.java
 E:\tg-undercover-bot\src\main\java\bot\wodibot\game\GameConfig.java
 E:\tg-undercover-bot\src\main\java\bot\wodibot\game\GameState.java
 E:\tg-undercover-bot\src\main\java\bot\wodibot\game\GameRoom.java
+E:\tg-undercover-bot\src\main\java\bot\wodibot\stats\StatsService.java
+E:\tg-undercover-bot\src\main\java\bot\wodibot\model\PlayerStats.java
 E:\tg-undercover-bot\src\main\java\bot\wodibot\BotConfig.java
 E:\tg-undercover-bot\src\main\java\bot\wodibot\utils\GameLogger.java
 E:\tg-undercover-bot\src\main\java\bot\wodibot\MainBot.java
