@@ -16,6 +16,7 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 
 import java.util.*;
 import java.util.concurrent.*;
+import bot.wodibot.stats.StatsService;
 
 public class GameRoom {
 
@@ -630,16 +631,24 @@ public class GameRoom {
         long aliveCivilian = players.values().stream()
                 .filter(p -> p.alive && !p.undercover)
                 .count();
-
+    
         if (aliveUndercover == 0) {
             BotUtils.sendMessage(bot, chatId, "🎉 *平民胜利！*");
             GameLogger.logGame(chatId, "游戏结束，平民胜利");
             showGameSummary(bot, false);
+            
+            // 记录胜率 - 平民胜利
+            recordGameStats(false);
+            
             state = GameState.ENDED;
         } else if (aliveUndercover >= aliveCivilian) {
             BotUtils.sendMessage(bot, chatId, "💀 *卧底胜利！*");
             GameLogger.logGame(chatId, "游戏结束，卧底胜利");
             showGameSummary(bot, true);
+            
+            // 记录胜率 - 卧底胜利
+            recordGameStats(true);
+            
             state = GameState.ENDED;
         } else {
             round++;
@@ -652,6 +661,31 @@ public class GameRoom {
             sendSpeakingTips(bot);
             scheduleTask("speaking_timeout", () -> startVote(bot),
                     config.getSpeakingTime(), TimeUnit.SECONDS);
+        }
+    }
+    
+    /**
+     * 记录游戏结果到胜率系统
+     * @param undercoverWin 是否为卧底胜利
+     */
+    private void recordGameStats(boolean undercoverWin) {
+        try {
+            // 准备玩家数据
+            Map<Long, String> playerMap = new HashMap<>();
+            Map<Long, Boolean> roleMap = new HashMap<>();
+            
+            for (Player p : players.values()) {
+                playerMap.put(p.userId, p.name);
+                roleMap.put(p.userId, p.undercover);
+            }
+            
+            // 记录胜率
+            StatsService.recordGameResult(playerMap, roleMap, undercoverWin);
+            
+            GameLogger.logGame(chatId, "已记录本局游戏的胜率数据");
+            
+        } catch (Exception e) {
+            GameLogger.logError(chatId, "记录胜率失败: " + e.getMessage());
         }
     }
 
@@ -691,6 +725,11 @@ public class GameRoom {
         summary.append("\n⏱️ *游戏统计*:\n");
         summary.append("总轮数：").append(round).append("\n");
         summary.append("玩家数：").append(players.size()).append("\n");
+        
+        // 添加胜率提示
+        summary.append("\n📈 *胜率已更新*\n");
+        summary.append("使用 /p 查看你的胜率\n");
+        summary.append("使用 /ph 查看胜率排行榜");
         
         BotUtils.sendMessage(bot, chatId, summary.toString());
     }

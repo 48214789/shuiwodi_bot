@@ -1,10 +1,8 @@
 package bot.wodibot;
 
-import java.io.InputStream;
-import java.util.Properties;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Properties;
 
 public class BotConfig {
     private static final Properties props = new Properties();
@@ -16,37 +14,38 @@ public class BotConfig {
     }
     
     public static synchronized void reload() {
-        try (InputStream is = BotConfig.class.getClassLoader()
-                .getResourceAsStream("bot.properties")) {
-            if (is != null) {
-                // 使用 UTF-8 编码读取
-                BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(is, StandardCharsets.UTF_8));
-                
-                props.clear();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // 跳过注释和空行
-                    line = line.trim();
-                    if (line.isEmpty() || line.startsWith("#")) {
-                        continue;
+        try {
+            // 在Replit中，资源文件路径不同
+            File configFile = new File("src/main/resources/bot.properties");
+            
+            if (configFile.exists()) {
+                try (InputStream is = new FileInputStream(configFile)) {
+                    BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(is, StandardCharsets.UTF_8));
+                    
+                    props.clear();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        line = line.trim();
+                        if (line.isEmpty() || line.startsWith("#")) {
+                            continue;
+                        }
+                        
+                        int equalsIndex = line.indexOf('=');
+                        if (equalsIndex > 0) {
+                            String key = line.substring(0, equalsIndex).trim();
+                            String value = line.substring(equalsIndex + 1).trim();
+                            props.setProperty(key, value);
+                        }
                     }
                     
-                    // 解析键值对
-                    int equalsIndex = line.indexOf('=');
-                    if (equalsIndex > 0) {
-                        String key = line.substring(0, equalsIndex).trim();
-                        String value = line.substring(equalsIndex + 1).trim();
-                        props.setProperty(key, value);
-                    }
+                    System.out.println("✅ 从文件加载配置: " + configFile.getAbsolutePath());
+                    valid = validateConfig();
+                    loaded = true;
                 }
-                
-                reader.close();
-                System.out.println("✅ 加载配置文件成功 (UTF-8)");
-                valid = validateConfig();
-                loaded = true;
             } else {
-                System.err.println("⚠️ 未找到配置文件，使用默认值");
+                System.err.println("⚠️ 配置文件不存在: " + configFile.getAbsolutePath());
+                System.err.println("当前工作目录: " + new File(".").getAbsolutePath());
                 loadDefaults();
                 valid = true;
                 loaded = true;
