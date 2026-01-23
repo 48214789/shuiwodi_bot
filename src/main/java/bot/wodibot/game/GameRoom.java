@@ -238,9 +238,7 @@ public class GameRoom {
                 "👑 *王者驾到！* " + playerNameWithBadge +
                         "（" + rankDescription + "）加入游戏！",
                 "🌟 *顶级玩家加入！* " + playerNameWithBadge +
-                        " 已抵达战场！（" + rankDescription + "）",
-                "🎉 *重量级选手！* 欢迎 " + playerNameWithBadge +
-                        "（" + rankDescription + "）加入战斗！"
+                        " 已抵达战场！（" + rankDescription + "）"
         };
         return messages[new Random().nextInt(messages.length)];
     }
