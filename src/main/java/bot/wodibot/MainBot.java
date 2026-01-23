@@ -129,16 +129,27 @@ public class MainBot extends TelegramLongPollingBot {
      */
     private void showPlayerStats(long chatId, long userId, String userName) {
         PlayerStats stats = StatsService.getPlayerStats(userId);
-
+        
         String message;
         if (stats == null || stats.getTotalGames() == 0) {
+            // 新玩家
             message = String.format("📊 *%s 的战绩*\n\n" +
                     "您还没有进行过游戏，快去开始一局吧！\n" +
-                    "使用 /startgame 开始新游戏", userName);
+                    "使用 /startgame 开始新游戏", 
+                    StatsService.getPlayerNameWithBadge(userId, userName));
         } else {
-            message = stats.getFormattedStats();
+            // 添加等级标识到玩家名字
+            String playerNameWithBadge = StatsService.getPlayerNameWithBadge(userId, userName);
+            String rankDesc = StatsService.getPlayerRankDescription(userId);
+            
+            message = String.format("📊 *%s 的战绩*\n\n" +
+                    "%s\n\n" +
+                    "👑 *玩家等级*: %s",
+                    playerNameWithBadge,
+                    stats.getFormattedStats(),
+                    rankDesc);
         }
-
+        
         BotUtils.sendMessage(this, chatId, message);
     }
 
@@ -159,7 +170,10 @@ public class MainBot extends TelegramLongPollingBot {
         for (int i = 0; i < Math.min(leaderboard.size(), 10); i++) {
             PlayerStats stats = leaderboard.get(i);
 
-            sb.append(getRankEmoji(i + 1)).append(" ").append(stats.playerName).append("\n");
+            // 使用带标识的名字
+        String playerNameWithBadge = StatsService.getPlayerNameWithBadge(stats.userId, stats.playerName);
+        
+        sb.append(getRankEmoji(i + 1)).append(" ").append(playerNameWithBadge).append("\n");
             sb.append("   战绩: ").append(stats.getWins()).append("胜")
                     .append(stats.getLosses()).append("负 (胜率: ")
                     .append(String.format("%.1f%%", stats.getWinRate())).append(")\n");
@@ -191,7 +205,7 @@ public class MainBot extends TelegramLongPollingBot {
             case 3:
                 return "🥉";
             default:
-                return "🏅";
+                return " ";
         }
     }
 

@@ -27,6 +27,192 @@ public class StatsService {
         loadStats();
         createBackupDirectory();
     }
+
+    /**
+     * 检查玩家是否是胜率排行榜第一名
+     * @param userId 玩家ID
+     * @return true如果是第一名，false如果不是
+     */
+    public static synchronized boolean isPlayerRankedFirst(long userId) {
+        List<PlayerStats> leaderboard = getLeaderboard(0);
+        if (leaderboard.isEmpty()) {
+            return false;
+        }
+        
+        PlayerStats topPlayer = leaderboard.get(0);
+        return topPlayer.userId == userId;
+    }
+
+    /**
+     * 检查玩家是否是平民胜率排行榜第一名
+     * @param userId 玩家ID
+     * @return true如果是第一名，false如果不是
+     */
+    public static synchronized boolean isPlayerCivilianRankedFirst(long userId) {
+        List<PlayerStats> leaderboard = getCivilianLeaderboard(0);
+        if (leaderboard.isEmpty()) {
+            return false;
+        }
+        
+        PlayerStats topPlayer = leaderboard.get(0);
+        return topPlayer.userId == userId;
+    }
+    
+    /**
+     * 检查玩家是否是卧底胜率排行榜第一名
+     * @param userId 玩家ID
+     * @return true如果是第一名，false如果不是
+     */
+    public static synchronized boolean isPlayerUndercoverRankedFirst(long userId) {
+        List<PlayerStats> leaderboard = getUndercoverLeaderboard(0);
+        if (leaderboard.isEmpty()) {
+            return false;
+        }
+        
+        PlayerStats topPlayer = leaderboard.get(0);
+        return topPlayer.userId == userId;
+    }
+
+    /**
+     * 获取玩家在所有排行榜中的排名
+     * @param userId 玩家ID
+     * @return Map包含各种排名信息，键为排行榜类型，值为排名（1-based），未上榜返回-1
+     */
+    public static synchronized Map<String, Integer> getPlayerAllRanks(long userId) {
+        Map<String, Integer> ranks = new HashMap<>();
+        
+        // 总胜率排名
+        List<PlayerStats> leaderboard = getLeaderboard(0);
+        ranks.put("total", getPlayerRankInList(leaderboard, userId));
+        
+        // 平民胜率排名
+        List<PlayerStats> civilianLeaderboard = getCivilianLeaderboard(0);
+        ranks.put("civilian", getPlayerRankInList(civilianLeaderboard, userId));
+        
+        // 卧底胜率排名
+        List<PlayerStats> undercoverLeaderboard = getUndercoverLeaderboard(0);
+        ranks.put("undercover", getPlayerRankInList(undercoverLeaderboard, userId));
+        
+        return ranks;
+    }
+
+    /**
+     * 在排行榜列表中查找玩家的排名
+     * @param leaderboard 排行榜列表
+     * @param userId 玩家ID
+     * @return 排名（1-based），未上榜返回-1
+     */
+    private static int getPlayerRankInList(List<PlayerStats> leaderboard, long userId) {
+        if (leaderboard.isEmpty()) {
+            return -1;
+        }
+        
+        for (int i = 0; i < leaderboard.size(); i++) {
+            if (leaderboard.get(i).userId == userId) {
+                return i + 1;
+            }
+        }
+        
+        return -1;
+    }
+
+    /**
+ * 获取玩家的等级标识
+ * @param userId 玩家ID
+ * @return 等级标识字符串
+ */
+public static synchronized String getPlayerRankBadge(long userId) {
+    boolean isTotalFirst = isPlayerRankedFirst(userId);
+    boolean isCivilianFirst = isPlayerCivilianRankedFirst(userId);
+    boolean isUndercoverFirst = isPlayerUndercoverRankedFirst(userId);
+    
+    if (isTotalFirst) {
+        return "👑"; // 总榜第一 - 皇冠
+    } else if (isCivilianFirst && isUndercoverFirst) {
+        return "🔥"; // 双榜第一 - 火焰
+    } else if (isCivilianFirst) {
+        return "🛡️"; // 平民第一 - 盾牌
+    } else if (isUndercoverFirst) {
+        return "🎭"; // 卧底第一 - 面具
+    }
+    
+    Map<String, Integer> ranks = getPlayerAllRanks(userId);
+    int totalRank = ranks.get("total");
+    
+    if (totalRank > 0 && totalRank <= 3) {
+        switch(totalRank) {
+            case 2: return "🥈"; // 总榜第二 - 银牌
+            case 3: return "🥉"; // 总榜第三 - 铜牌
+        }
+    }
+    
+    PlayerStats stats = getPlayerStats(userId);
+    if (stats != null) {
+        if (stats.getTotalGames() >= 10) {
+            return "🎮"; // 资深玩家 - 游戏手柄
+        } else if (stats.getTotalGames() > 0) {
+            return "👤"; // 普通玩家 - 人像
+        }
+    }
+    
+    return ""; // 新玩家或没有标识
+}
+
+/**
+ * 获取玩家带标识的名字
+ * @param userId 玩家ID
+ * @param playerName 玩家名字
+ * @return 带标识的名字
+ */
+public static synchronized String getPlayerNameWithBadge(long userId, String playerName) {
+    String badge = getPlayerRankBadge(userId);
+    if (!badge.isEmpty()) {
+        return badge + " " + playerName;
+    }
+    return playerName;
+}
+
+/**
+ * 获取玩家详细等级说明
+ * @param userId 玩家ID
+ * @return 等级说明
+ */
+public static synchronized String getPlayerRankDescription(long userId) {
+    boolean isTotalFirst = isPlayerRankedFirst(userId);
+    boolean isCivilianFirst = isPlayerCivilianRankedFirst(userId);
+    boolean isUndercoverFirst = isPlayerUndercoverRankedFirst(userId);
+    Map<String, Integer> ranks = getPlayerAllRanks(userId);
+    PlayerStats stats = getPlayerStats(userId);
+    
+    if (isTotalFirst) {
+        return "👑 胜率总榜冠军";
+    } else if (isCivilianFirst && isUndercoverFirst) {
+        return "🔥 双榜第一（平民+卧底）";
+    } else if (isCivilianFirst) {
+        return "🛡️ 平民榜冠军";
+    } else if (isUndercoverFirst) {
+        return "🎭 卧底榜冠军";
+    }
+    
+    int totalRank = ranks.get("total");
+    if (totalRank > 0) {
+        if (totalRank == 2) return "🥈 胜率总榜亚军";
+        if (totalRank == 3) return "🥉 胜率总榜季军";
+        if (totalRank <= 10) return "⭐ 胜率总榜第" + totalRank + "名";
+    }
+    
+    if (stats != null) {
+        if (stats.getTotalGames() >= 20) {
+            return "🎮 资深玩家（" + stats.getTotalGames() + "场）";
+        } else if (stats.getTotalGames() >= 10) {
+            return "🎮 老玩家（" + stats.getTotalGames() + "场）";
+        } else if (stats.getTotalGames() > 0) {
+            return "👤 普通玩家（" + stats.getTotalGames() + "场）";
+        }
+    }
+    
+    return "🌱 新玩家";
+}
     
     /**
      * 记录游戏结果
