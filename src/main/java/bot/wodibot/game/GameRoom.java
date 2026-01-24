@@ -201,6 +201,7 @@ public class GameRoom {
                     "❌ 房间已满（最多" + config.getMaxPlayers() + "人）");
             return;
         }
+        
 
         Player newPlayer = new Player(userId, userName);
         players.put(userId, newPlayer);
