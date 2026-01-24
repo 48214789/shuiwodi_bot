@@ -68,192 +68,188 @@ public class StatsService {
 
         // 顶部边框
         profile.append("▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄\n");
-        profile.append("█         玩 家 状 态           █\n");
+        profile.append("█         玩 家 荣 誉           █\n");
         profile.append("█▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█\n");
 
         // 玩家信息
         String displayName = playerNameWithBadge.replace("👑", "").replace("🔥", "").replace("🛡️", "")
                 .replace("🎭", "").replace("🥈", "").replace("🥉", "")
                 .replace("🎮", "").replace("👤", "").replace("🌱", "").trim();
-        profile.append("█  ▶ 玩家：").append(displayName);
+        profile.append("█  ▶️ 玩家：").append(displayName);
         // 对齐处理
         int nameLength = getDisplayLength(displayName);
-        int spaces = 24 - nameLength; // 24个字符宽度
+        int spaces = 22 - nameLength; // 调整为22个字符宽度
         for (int i = 0; i < spaces; i++)
             profile.append(" ");
         profile.append("█\n");
 
         profile.append("█                                 █\n");
 
-        // 排名状态
-        profile.append("█  ⚡ 排 名 状 态                █\n");
+        // 巅峰排名（新的标题）
+        profile.append("█  🏆 巅 峰 排 名 🏆             █\n");
+
+        // 根据排名动态显示，冠军用★突出
+        List<String> rankLines = new ArrayList<>();
+
+        // 卧底榜排名（优先显示冠军）
+        if (undercoverRank > 0) {
+            String rankSymbol = "";
+            if (undercoverRank == 1) {
+                rankSymbol = "★🥇";
+            } else if (undercoverRank == 2) {
+                rankSymbol = "★🥈";
+            } else if (undercoverRank == 3) {
+                rankSymbol = "★🥉";
+            } else {
+                rankSymbol = "  ";
+            }
+
+            String rankText = "";
+            if (undercoverRank == 1) {
+                rankText = String.format(" 卧底榜单 · 冠军");
+            } else if (undercoverRank == 2) {
+                rankText = String.format(" 卧底榜单 · 亚军");
+            } else if (undercoverRank == 3) {
+                rankText = String.format(" 卧底榜单 · 季军");
+            } else {
+                rankText = String.format(" 卧底榜单 · 排名#%d", undercoverRank);
+            }
+
+            rankLines.add(rankSymbol + rankText);
+        } else {
+            rankLines.add("★📊 平民榜单 · 未上榜");
+        }
 
         // 总榜排名
         if (totalRank > 0) {
-            String totalRankEmoji = getRankEmoji(totalRank);
-            profile.append("█   ▸ ").append(totalRankEmoji).append(" 胜率总榜");
+            String rankSymbol = "";
             if (totalRank == 1) {
-                profile.append(" 冠 军");
-                for (int i = 0; i < 7; i++)
-                    profile.append(" ");
+                rankSymbol = "★🥇";
             } else if (totalRank == 2) {
-                profile.append(" 亚 军");
-                for (int i = 0; i < 7; i++)
-                    profile.append(" ");
+                rankSymbol = "★🥈";
             } else if (totalRank == 3) {
-                profile.append(" 季 军");
-                for (int i = 0; i < 7; i++)
-                    profile.append(" ");
+                rankSymbol = "★🥉";
             } else {
-                profile.append(" 排名#").append(totalRank);
-                int rankDigits = String.valueOf(totalRank).length();
-                int spacesNeeded = 11 - rankDigits;
-                for (int i = 0; i < spacesNeeded; i++)
-                    profile.append(" ");
+                rankSymbol = "  ";
             }
-            profile.append("█\n");
+
+            String rankText = "";
+            if (totalRank == 1) {
+                rankText = String.format(" 胜率总榜 · 冠军");
+            } else if (totalRank == 2) {
+                rankText = String.format(" 胜率总榜 · 亚军");
+            } else if (totalRank == 3) {
+                rankText = String.format(" 胜率总榜 · 季军");
+            } else {
+                rankText = String.format(" 胜率总榜 · 排名#%d", totalRank);
+            }
+
+            rankLines.add(rankSymbol + rankText);
         } else {
-            profile.append("█   ▸   胜率总榜 未上榜");
-            for (int i = 0; i < 8; i++)
-                profile.append(" ");
-            profile.append("█\n");
+            rankLines.add("★📊 胜率总榜 · 未上榜");
         }
 
         // 平民榜排名
         if (civilianRank > 0) {
-            String civilianRankEmoji = getRankEmoji(civilianRank);
-            profile.append("█   ▸ ").append(civilianRankEmoji).append(" 平民榜单");
+            String rankSymbol = "";
             if (civilianRank == 1) {
-                profile.append(" 冠 军");
-                for (int i = 0; i < 7; i++)
-                    profile.append(" ");
+                rankSymbol = "★🥇";
+            } else if (civilianRank == 2) {
+                rankSymbol = "★🥈";
+            } else if (civilianRank == 3) {
+                rankSymbol = "★🥉";
             } else {
-                profile.append(" 排名#").append(civilianRank);
-                int rankDigits = String.valueOf(civilianRank).length();
-                int spacesNeeded = 11 - rankDigits;
-                for (int i = 0; i < spacesNeeded; i++)
-                    profile.append(" ");
+                rankSymbol = "  ";
             }
-            profile.append("█\n");
+
+            String rankText = "";
+            if (civilianRank == 1) {
+                rankText = String.format(" 平民榜单 · 冠军");
+            } else if (civilianRank == 2) {
+                rankText = String.format(" 平民榜单 · 亚军");
+            } else if (civilianRank == 3) {
+                rankText = String.format(" 平民榜单 · 季军");
+            } else {
+                rankText = String.format(" 平民榜单 · 排名#%d", civilianRank);
+            }
+
+            rankLines.add(rankSymbol + rankText);
         } else {
-            profile.append("█   ▸   平民榜单 未上榜");
-            for (int i = 0; i < 8; i++)
-                profile.append(" ");
-            profile.append("█\n");
+            rankLines.add("★📊 平民榜单 · 未上榜");
         }
 
-        // 卧底榜排名
-        if (undercoverRank > 0) {
-            String undercoverRankEmoji = getRankEmoji(undercoverRank);
-            profile.append("█   ▸ ").append(undercoverRankEmoji).append(" 卧底榜单");
-            if (undercoverRank == 1) {
-                profile.append(" 冠 军");
-                for (int i = 0; i < 7; i++)
-                    profile.append(" ");
-            } else {
-                profile.append(" 排名#").append(undercoverRank);
-                int rankDigits = String.valueOf(undercoverRank).length();
-                int spacesNeeded = 11 - rankDigits;
-                for (int i = 0; i < spacesNeeded; i++)
-                    profile.append(" ");
-            }
-            profile.append("█\n");
-        } else {
-            profile.append("█   ▸   卧底榜单 未上榜");
-            for (int i = 0; i < 8; i++)
+        // 显示排名信息（每行最多2个排名）
+        for (int i = 0; i < rankLines.size(); i++) {
+            String line = rankLines.get(i);
+            profile.append("█   ").append(line);
+
+            // 对齐处理
+            int lineLength = getDisplayLength(
+                    line.replace("★", "").replace("🥇", "").replace("🥈", "").replace("🥉", "").replace("📊", ""));
+            int lineSpaces = 28 - lineLength; // 调整对齐宽度
+            for (int j = 0; j < lineSpaces; j++)
                 profile.append(" ");
             profile.append("█\n");
         }
 
         profile.append("█                                 █\n");
 
-        // 当前成就
-        profile.append("█  🔥 当 前 成 就                █\n");
+        // 个人荣耀展示
+        profile.append("█  ✨ 个 人 荣 耀 展 示           █\n");
+
+        // 称号信息框
+        profile.append("█   ┌─ 称 号 信 息 ─┐           █\n");
+
+        // 称号
+        String titleText = "暂无称号";
+        if (!titles.isEmpty()) {
+            titleText = titles.get(0);
+            // 如果称号太多，只显示前3个
+            if (titles.size() > 1) {
+                titleText += "等" + titles.size() + "个称号";
+            }
+        }
+        profile.append("█   │ 🎭 称号：").append(titleText);
+        int titleLength = getDisplayLength(titleText);
+        int titleSpaces = 17 - titleLength; // 框内宽度调整
+        for (int i = 0; i < titleSpaces; i++)
+            profile.append(" ");
+        profile.append("│           █\n");
+
+        // 状态
+        profile.append("█   │ ⭐ 状态：").append(status);
+        int statusLength = getDisplayLength(status);
+        int statusSpaces = 18 - statusLength; // 框内宽度调整
+        for (int i = 0; i < statusSpaces; i++)
+            profile.append(" ");
+        profile.append("│           █\n");
 
         // 连胜记录
-        profile.append("█   ▸ 连胜记录：");
+        String streakText;
         if (currentStreak > 0) {
-            profile.append(currentStreak).append("连胜");
+            streakText = currentStreak + "连胜";
             if (currentStreak >= 10) {
-                profile.append("🔥🔥");
+                streakText += "🔥🔥";
             } else if (currentStreak >= 4) {
-                profile.append("🔥");
+                streakText += "🔥";
             } else {
-                profile.append("✨");
-            }
-            // 对齐处理
-            int streakLength = String.valueOf(currentStreak).length();
-            int spacesNeeded = 10 - streakLength;
-            for (int i = 0; i < spacesNeeded; i++)
-                profile.append(" ");
-        } else {
-            profile.append("无连胜记录");
-            for (int i = 0; i < 4; i++)
-                profile.append(" ");
-        }
-        profile.append("█\n");
-
-        // 称号 - 改为展示所有称号
-        if (!titles.isEmpty()) {
-            // 第一行显示第一个称号
-            profile.append("█   ▸ 称号：");
-            profile.append(titles.get(0));
-            
-            // 对齐处理
-            int titleLength = getDisplayLength(titles.get(0));
-            int spacesNeeded = 20 - titleLength;
-            for (int i = 0; i < spacesNeeded; i++) {
-                profile.append(" ");
-            }
-            profile.append("█\n");
-            
-            // 如果有更多称号，在后续行显示
-            if (titles.size() > 1) {
-                // 显示剩余的称号，每行最多2个
-                for (int i = 1; i < titles.size(); i++) {
-                    profile.append("█   ▸ ");
-                    
-                    if (i % 2 == 1) {
-                        // 奇数行：显示称号并留空间给下一个称号
-                        profile.append(titles.get(i));
-                        int currentTitleLength = getDisplayLength(titles.get(i));
-                        int padding = 22 - currentTitleLength;
-                        for (int j = 0; j < padding; j++) {
-                            profile.append(" ");
-                        }
-                        
-                        // 如果还有下一个称号且在同一行
-                        if (i + 1 < titles.size()) {
-                            profile.append(titles.get(i + 1));
-                            i++; // 跳过下一个，因为已经显示了
-                        }
-                    }
-                    
-                    // 对齐行尾
-                    int lineLength = 0;
-                    int lineStart = profile.lastIndexOf("█   ▸ ");
-                    if (lineStart >= 0) {
-                        String line = profile.substring(lineStart);
-                        lineLength = getDisplayLength(line.replace("█", "").trim());
-                    }
-                    int finalPadding = 28 - lineLength;
-                    for (int j = 0; j < finalPadding; j++) {
-                        profile.append(" ");
-                    }
-                    profile.append("█\n");
-                }
+                streakText += "✨";
             }
         } else {
-            profile.append("█   ▸ 称号：暂无称号");
-            for (int i = 0; i < 13; i++)
-                profile.append(" ");
-            profile.append("█\n");
+            streakText = "无连胜记录";
         }
+        profile.append("█   │ ⚡ 连胜：").append(streakText);
+        int streakLength = getDisplayLength(streakText);
+        int streakSpaces = 18 - streakLength; // 框内宽度调整
+        for (int i = 0; i < streakSpaces; i++)
+            profile.append(" ");
+        profile.append("│           █\n");
 
+        profile.append("█   └───────────────┘           █\n");
         profile.append("█                                 █\n");
 
-        // 核心数据
-        profile.append("█  📊 核 心 数 据                █\n");
+        // 核心战绩（修改标题）
+        profile.append("█  📊 核 心 战 绩               █\n");
 
         // 总场次和胜率
         String totalInfo = String.format("总场次：%d场 | 胜率：%.1f%%",
@@ -280,16 +276,6 @@ public class StatsService {
         int undercoverInfoLength = getDisplayLength(undercoverInfo);
         int undercoverSpaces = 25 - undercoverInfoLength;
         for (int i = 0; i < undercoverSpaces; i++)
-            profile.append(" ");
-        profile.append("█\n");
-
-        profile.append("█                                 █\n");
-
-        // 当前状态
-        profile.append("█  🔥 当 前 状 态：").append(status);
-        int statusLength = getDisplayLength(status);
-        int statusSpaces = 22 - statusLength;
-        for (int i = 0; i < statusSpaces; i++)
             profile.append(" ");
         profile.append("█\n");
 
