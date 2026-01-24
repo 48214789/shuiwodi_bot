@@ -104,6 +104,13 @@ public class MainBot extends TelegramLongPollingBot {
                 showLeaderboard(chatId);
                 return;
             }
+
+            // 添加主页命令
+            if ("/home".equals(text) || "/home@shuiwodi_bot".equals(text)) {
+                showPlayerProfile(chatId, userId, update.getMessage().getFrom().getFirstName());
+                return;
+            }
+
             if ("/help".equals(text) || "/help@shuiwodi_bot".equals(text)) {
                 BotUtils.sendMessage(this, chatId, getHelpMessage());
                 return;
@@ -122,6 +129,14 @@ public class MainBot extends TelegramLongPollingBot {
             GameLogger.logError(-1, "处理更新时出错: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 显示玩家主页
+     */
+    private void showPlayerProfile(long chatId, long userId, String userName) {
+        String profile = StatsService.getPlayerProfile(userId, userName);
+        BotUtils.sendMessage(this, chatId, profile);
     }
 
     /**
@@ -144,7 +159,8 @@ public class MainBot extends TelegramLongPollingBot {
 
             message = String.format("📊 *%s 的战绩*\n\n" +
                     "%s\n\n" +
-                    "👑 *玩家等级*: %s",
+                    "👑 *玩家等级*: %s\n\n" +
+                    "💡 使用 /home 查看详细主页",
                     playerNameWithBadge,
                     stats.getFormattedStats(),
                     rankDesc);
@@ -357,9 +373,10 @@ public class MainBot extends TelegramLongPollingBot {
                 "/rules - 查看游戏规则\n" +
                 "/help - 显示此帮助信息\n" +
                 "/cancel - 取消当前游戏\n" +
-                "/stats - 查看机器人统计\n" +
+                "/stats - 查看机器人统计\n\n" +
+                "/home - 查看我的主页\n" +
                 "/p - 查看我的胜率\n" +
-                "/ph - 查看胜率排行榜\n" +
+                "/ph - 查看胜率排行榜\n\n" +
                 "\n👑 管理员命令：\n" +
                 "/status - 查看机器人状态\n" +
                 "/restart - 重启机器人\n" +
