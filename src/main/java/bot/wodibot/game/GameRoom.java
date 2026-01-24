@@ -37,7 +37,7 @@ public class GameRoom {
 
     private Integer joinMessageId;
     private final List<String> gameLog = new ArrayList<>();
-    
+
     // 存储机器人发送的消息ID，用于游戏开始时的清理
     private final List<Integer> botMessageIds = new ArrayList<>();
 
@@ -69,7 +69,7 @@ public class GameRoom {
             botMessageIds.add(messageId);
         }
     }
-    
+
     /**
      * 清除所有机器人消息
      */
@@ -77,21 +77,21 @@ public class GameRoom {
         if (botMessageIds.isEmpty()) {
             return;
         }
-        
+
         GameLogger.logGame(chatId, "开始清理机器人所有消息，共" + botMessageIds.size() + "条");
-        
+
         // 复制列表以避免并发修改
         List<Integer> messagesToDelete = new ArrayList<>(botMessageIds);
-        
+
         // 批量删除消息
         BotUtils.deleteMessages(bot, chatId, messagesToDelete);
-        
+
         // 清空记录
         botMessageIds.clear();
-        
+
         GameLogger.logGame(chatId, "消息清理完成");
     }
-    
+
     /**
      * 发送消息并记录ID
      */
@@ -131,27 +131,27 @@ public class GameRoom {
             return;
         }
 
-        if ("/help".equals(text)) {
+        if ("/help".equals(text) || "/help@shuiwodi_bot".equals(text)) {
             sendHelp(bot);
             return;
         }
 
-        if ("/status".equals(text)) {
+        if ("/status".equals(text) || "/status@shuiwodi_bot".equals(text)) {
             sendGameStatus(bot);
             return;
         }
 
-        if ("/players".equals(text)) {
+        if ("/players".equals(text) || "/players@shuiwodi_bot".equals(text)) {
             sendPlayerList(bot);
             return;
         }
 
-        if ("/rules".equals(text)) {
+        if ("/rules".equals(text) || "/rules@shuiwodi_bot".equals(text)) {
             sendRules(bot);
             return;
         }
 
-        if ("/cancel".equals(text)) {
+        if ("/cancel".equals(text) || "/cancel@shuiwodi_bot".equals(text)) {
             cancelGame(bot);
             return;
         }
@@ -163,7 +163,7 @@ public class GameRoom {
         }
 
         // 发言阶段
-        if (state == GameState.SPEAKING && msg.getText().startsWith("/")) {
+        if (state == GameState.SPEAKING && msg.getText().startsWith("s")) {
             handleSpeaking(bot, uid, msg.getText());
             return;
         }
@@ -214,16 +214,16 @@ public class GameRoom {
         String welcomeMessage;
         if (rankDescription.contains("冠军") || rankDescription.contains("双榜第一")) {
             // 冠军级玩家
-            welcomeMessage = getChampionWelcomeMessage(playerNameWithBadge, rankDescription);
+            welcomeMessage = getChampionWelcomeMessage(userName, rankDescription);
         } else if (rankDescription.contains("亚军") || rankDescription.contains("季军")) {
             // 前三名玩家
-            welcomeMessage = getTopThreeWelcomeMessage(playerNameWithBadge, rankDescription);
+            welcomeMessage = getTopThreeWelcomeMessage(userName, rankDescription);
         } else if (rankDescription.contains("资深") || rankDescription.contains("老玩家")) {
             // 资深玩家
-            welcomeMessage = getVeteranWelcomeMessage(playerNameWithBadge, rankDescription);
+            welcomeMessage = getVeteranWelcomeMessage(userName, rankDescription);
         } else {
             // 普通玩家
-            welcomeMessage = getRegularPlayerWelcomeMessage(playerNameWithBadge, rankDescription);
+            welcomeMessage = getRegularPlayerWelcomeMessage(userName, rankDescription);
         }
 
         sendAndRecordMessage(bot, welcomeMessage);
@@ -235,10 +235,30 @@ public class GameRoom {
      */
     private String getChampionWelcomeMessage(String playerNameWithBadge, String rankDescription) {
         String[] messages = {
-                "👑 *王者驾到！* " + playerNameWithBadge +
-                        "（" + rankDescription + "）加入游戏！",
-                "🌟 *顶级玩家加入！* " + playerNameWithBadge +
-                        " 已抵达战场！（" + rankDescription + "）"
+            // 1. 王者风范
+            "👑 *【至尊驾到】*  " + playerNameWithBadge + " （" + rankDescription + 
+            "），亲临游戏！全体玩家肃然起敬，恭迎王者归来！✨\n" +
+            "⚜️ 此等强者驾临，今日战局必将是传奇之战！",
+            
+            // 2. 天神降临
+            "✨ *【神级降临】* 天象异变，众星朝拜！ " + playerNameWithBadge + " （" + rankDescription + 
+            "），已降临战场！\n" +
+            "💫 服务器检测到传说级玩家，全体玩家获得【观战荣耀】Buff！",
+            
+            // 3. 宗门老祖
+            "🏯 *【老祖出关】* 隐世千年的" + rankDescription + "级大能—— " + playerNameWithBadge + 
+            "  今日破关而出！\n" +
+            "⚔️ 后生晚辈们，此乃观摩学习的千载良机，还不速来拜见！",
+            
+            // 4. 星际统帅
+            "🚀 *【统帅登陆】* 最高权限确认！银河系" + rankDescription + "级指挥官—— " + playerNameWithBadge + 
+            "  已接管游戏！\n" +
+            "🛡️ 全体玩家进入【敬畏模式】，请展现你们的最佳表现！",
+            
+            // 5. 九霄帝君
+            "🌌 *【帝君临凡】* 九霄之上，帝座移位！ " + playerNameWithBadge + " （" + rankDescription + 
+            "），携无上威压驾临！\n" +
+            "👁️ 此等存在，一举一动皆是法则，一言一语皆是天机！"
         };
         return messages[new Random().nextInt(messages.length)];
     }
@@ -248,12 +268,20 @@ public class GameRoom {
      */
     private String getTopThreeWelcomeMessage(String playerNameWithBadge, String rankDescription) {
         String[] messages = {
-                "⭐ *精英玩家！* " + playerNameWithBadge +
-                        "（" + rankDescription + "）已就位！",
-                "🎖️ *高手降临！* " + playerNameWithBadge +
-                        " 加入游戏！（" + rankDescription + "）",
-                "🔥 *强者加入！* 欢迎 " + playerNameWithBadge +
-                        "（" + rankDescription + "）参加战斗！"
+            // 1. 一代宗师
+            "⚔️ *【宗师驾临】* 纵横江湖多年的" + rankDescription + "级强者—— " + playerNameWithBadge + 
+            "  今日再现武林！\n" +
+            "📜 其名号在玩家间传颂已久，今日有幸同场竞技，实乃幸事！",
+            
+            // 2. 殿堂元老
+            "🏛️ *【殿堂元老】* 游戏殿堂级人物 " + playerNameWithBadge + " （" + rankDescription + 
+            "），载誉归来！\n" +
+            "🎖️ 无数辉煌战绩加身，今日之战必将再添传奇！",
+            
+            // 3. 名宿登场
+            "🌟 *【一方名宿】* 久负盛名的" + rankDescription + "级玩家—— " + playerNameWithBadge + 
+            "  加入战局！\n" +
+            "🔥 其战术智慧与丰富经验，足以让任何对手心生敬畏！"
         };
         return messages[new Random().nextInt(messages.length)];
     }
@@ -353,7 +381,7 @@ public class GameRoom {
 
         // 清理所有机器人消息
         clearAllBotMessages(bot);
-        
+
         sendAndRecordMessage(bot, "🛑 游戏已取消");
         GameLogger.logGame(chatId, "游戏被用户取消");
     }
@@ -422,19 +450,26 @@ public class GameRoom {
 
     private void assign(AbsSender bot) {
         cancelAllTasks();
-        
+
         // 清理加入阶段的所有消息
         clearAllBotMessages(bot);
 
         if (players.size() < config.getMinPlayers()) {
-            sendAndRecordMessage(bot, "❌ 人数不足（需要至少" + config.getMinPlayers() + "人），游戏取消");
+            sendAndRecordMessage(bot,
+                    "❌ 人数不足，游戏取消\n" +
+                            "👥 当前人数: " + players.size() + " 人\n" +
+                            "✅ 需要至少 " + config.getMinPlayers() + " 人才能开始游戏\n\n" +
+                            "📢 请邀请更多朋友加入后再试！");
             state = GameState.ENDED;
             return;
         }
 
         WordService.WordPair pair = WordService.randomForChat(chatId);
         if (pair == null) {
-            sendAndRecordMessage(bot, "❌ 词库加载失败，请稍后重试");
+            sendAndRecordMessage(bot,
+                    "❌ 词库加载失败\n" +
+                            "📦 无法获取游戏词语，请稍后重试\n" +
+                            "🔄 你可以尝试重新开始游戏");
             state = GameState.ENDED;
             return;
         }
@@ -448,9 +483,13 @@ public class GameRoom {
         Collections.shuffle(playerList);
 
         StringBuilder roleInfo = new StringBuilder();
-        roleInfo.append("🎭 *身份分配完成*\n\n");
-        roleInfo.append("卧底数量: ").append(undercoverCount).append("\n\n");
+        roleInfo.append("🎉 *游戏开始！身份分配完成*\n\n");
+        roleInfo.append("📊 *游戏信息*\n");
+        roleInfo.append("👥 玩家人数: ").append(players.size()).append(" 人\n");
+        roleInfo.append("🎭 卧底数量: ").append(undercoverCount).append(" 人\n");
+        roleInfo.append("📈 卧底比例: ").append(String.format("%.0f%%", config.getUndercoverRatio() * 100)).append("\n\n");
 
+        roleInfo.append("📋 *玩家列表*\n");
         for (int i = 0; i < playerList.size(); i++) {
             Player p = playerList.get(i);
             if (i < undercoverCount) {
@@ -470,10 +509,11 @@ public class GameRoom {
             p.spoke = "";
             p.voted = false;
 
-            roleInfo.append((i + 1)).append(". ").append(p.name);
+            roleInfo.append((i + 1)).append(". ").append(StatsService.getPlayerNameWithBadge(p.userId, p.name));
             roleInfo.append("\n");
         }
-
+        roleInfo.append("\n");
+        roleInfo.append("\n");
         sendAndRecordMessage(bot, roleInfo.toString());
         GameLogger.logGame(chatId,
                 "身份分配完成，平民词: " + civilianWord + "，卧底词: " + undercoverWord +
@@ -482,8 +522,19 @@ public class GameRoom {
         // 开始第一轮发言
         state = GameState.SPEAKING;
         sendSpeakingTips(bot);
-        sendAndRecordMessage(bot,
-                "🗣 发言阶段开始（" + config.getSpeakingTime() + "秒），请用 ( / 描述 ) 来发言");
+
+        String speakingStartMsg = "🗣 *发言阶段开始*\n\n" +
+                "⏱ *发言时间*: " + config.getSpeakingTime() + " 秒\n" +
+                "📝 *发言格式*:  `s描述` \n" +
+                "🎯 *发言目标*: 描述你的词语，但不要直接说出\n\n" +
+                "📌 *重要规则*\n" +
+                "1. 每人只能发言一次\n" +
+                "2. 发言要简洁明了\n" +
+                "3. 不要直接说出词语\n" +
+                "4. 发言重复别人的描述，这属于划水哦~\n\n" +
+                "⏰ 倒计时开始...";
+
+        sendAndRecordMessage(bot, speakingStartMsg);
 
         scheduleTask("speaking_timeout", () -> startVote(bot),
                 config.getSpeakingTime(), TimeUnit.SECONDS);
@@ -492,7 +543,7 @@ public class GameRoom {
     private void handleSpeaking(AbsSender bot, long uid, String text) {
         Player p = players.get(uid);
         if (p != null && p.alive) {
-            String description = text.replace("/", "").trim();
+            String description = text.replace("s", "").trim();
 
             // 检查描述是否有效
             if (BotUtils.isBlank(description)) {
@@ -550,7 +601,7 @@ public class GameRoom {
             if (p.alive) {
                 // 使用带标识的名字
                 String playerNameWithBadge = StatsService.getPlayerNameWithBadge(p.userId, p.name);
-                sb.append(i).append("号 ").append(playerNameWithBadge).append(" - ");
+                sb.append(i).append("、 ").append(playerNameWithBadge).append(" - ");
                 if (!BotUtils.isBlank(p.spoke)) {
                     sb.append(p.spoke);
                 } else {
@@ -563,8 +614,8 @@ public class GameRoom {
         }
 
         sb.append("\n💡 *投票方式*:\n");
-        sb.append("发送 `/数字` 或直接发送数字进行投票\n");
-        sb.append("例如: `/1` 或 `1` 投票给1号玩家");
+        sb.append("发送 `数字` 进行投票\n");
+        sb.append("例如: `1` 投票给1号玩家");
 
         sendAndRecordMessage(bot, sb.toString());
         GameLogger.logGame(chatId, "第" + round + "轮投票开始");
@@ -612,10 +663,10 @@ public class GameRoom {
             }
 
             // 检查是否投给自己
-            if (targetUserId == uid) {
-                BotUtils.sendPrivateMessage(bot, uid, "⚠️ 不能投票给自己");
-                return;
-            }
+            // if (targetUserId == uid) {
+            // BotUtils.sendPrivateMessage(bot, uid, "⚠️ 不能投票给自己");
+            // return;
+            // }
 
             // 记录投票
             votes.put(uid, targetUserId);
@@ -815,7 +866,7 @@ public class GameRoom {
                 "1. 描述要具体但不要太明显\n" +
                 "2. 卧底要模仿平民的描述方式\n" +
                 "3. 平民要寻找描述中的不一致\n" +
-                "4. 使用 `/ + 你的描述` 来发言\n\n" +
+                "4. 使用 `s描述` 来发言\n\n" +
                 "⏰ 你有" + config.getSpeakingTime() + "秒时间发言";
 
         players.values().stream()
@@ -831,8 +882,8 @@ public class GameRoom {
         summary.append("📊 *身份分布*:\n");
         players.values().forEach(p -> {
             // 使用带标识的名字
-        String playerNameWithBadge = StatsService.getPlayerNameWithBadge(p.userId, p.name);
-        summary.append(playerNameWithBadge).append(" - ");
+            String playerNameWithBadge = StatsService.getPlayerNameWithBadge(p.userId, p.name);
+            summary.append(playerNameWithBadge).append(" - ");
             if (p.undercover)
                 summary.append("卧底");
             else
@@ -869,8 +920,8 @@ public class GameRoom {
             for (Player p : players.values()) {
                 if (p.alive) {
                     // 使用带标识的名字
-                String playerNameWithBadge = StatsService.getPlayerNameWithBadge(p.userId, p.name);
-                status.append("• ").append(playerNameWithBadge);
+                    String playerNameWithBadge = StatsService.getPlayerNameWithBadge(p.userId, p.name);
+                    status.append("• ").append(playerNameWithBadge);
                     if (state == GameState.SPEAKING) {
                         status.append(BotUtils.isBlank(p.spoke) ? " (未发言)" : " (已发言)");
                     }
@@ -949,7 +1000,7 @@ public class GameRoom {
                 "3. 首次加入需要私聊机器人发送 /start \n" +
                 "4. 确认后返回群聊，点击\"开始游戏\"按钮\n" +
                 "5. 系统分配身份和词语（私聊）\n" +
-                "6. 每轮用 / + 描述你的词语\n" +
+                "6. 每轮用 `s描述` 进行发言\n" +
                 "7. 投票淘汰疑似卧底的玩家\n" +
                 "8. 直到一方胜利\n\n" +
                 "⚙️ 配置参数：\n" +

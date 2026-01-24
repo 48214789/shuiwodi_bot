@@ -31,7 +31,7 @@ public class MainBot extends TelegramLongPollingBot {
     private static FileLock lockFileLock = null;
     private static RandomAccessFile lockFile = null;
     private static FileChannel lockChannel = null;
-    
+
     private final Map<Long, GameRoom> rooms = new ConcurrentHashMap<>();
     private final Map<Long, Long> lastActivityTime = new ConcurrentHashMap<>();
 
@@ -95,21 +95,21 @@ public class MainBot extends TelegramLongPollingBot {
             }
 
             // 普通用户命令
-            if ("/p".equals(text)) {
+            if ("/p".equals(text) || "/p@shuiwodi_bot".equals(text)) {
                 showPlayerStats(chatId, userId, update.getMessage().getFrom().getFirstName());
                 return;
             }
 
-            if ("/ph".equals(text)) {
+            if ("/ph".equals(text) || "/ph@shuiwodi_bot".equals(text)) {
                 showLeaderboard(chatId);
                 return;
             }
-            if ("/help".equals(text)) {
+            if ("/help".equals(text) || "/help@shuiwodi_bot".equals(text)) {
                 BotUtils.sendMessage(this, chatId, getHelpMessage());
                 return;
             }
 
-            if ("/stats".equals(text)) {
+            if ("/stats".equals(text) || "/stats@shuiwodi_bot".equals(text)) {
                 showBotStats(chatId);
                 return;
             }
@@ -129,19 +129,19 @@ public class MainBot extends TelegramLongPollingBot {
      */
     private void showPlayerStats(long chatId, long userId, String userName) {
         PlayerStats stats = StatsService.getPlayerStats(userId);
-        
+
         String message;
         if (stats == null || stats.getTotalGames() == 0) {
             // 新玩家
             message = String.format("📊 *%s 的战绩*\n\n" +
                     "您还没有进行过游戏，快去开始一局吧！\n" +
-                    "使用 /startgame 开始新游戏", 
+                    "使用 /startgame 开始新游戏",
                     StatsService.getPlayerNameWithBadge(userId, userName));
         } else {
             // 添加等级标识到玩家名字
             String playerNameWithBadge = StatsService.getPlayerNameWithBadge(userId, userName);
             String rankDesc = StatsService.getPlayerRankDescription(userId);
-            
+
             message = String.format("📊 *%s 的战绩*\n\n" +
                     "%s\n\n" +
                     "👑 *玩家等级*: %s",
@@ -149,7 +149,7 @@ public class MainBot extends TelegramLongPollingBot {
                     stats.getFormattedStats(),
                     rankDesc);
         }
-        
+
         BotUtils.sendMessage(this, chatId, message);
     }
 
@@ -171,9 +171,9 @@ public class MainBot extends TelegramLongPollingBot {
             PlayerStats stats = leaderboard.get(i);
 
             // 使用带标识的名字
-        String playerNameWithBadge = StatsService.getPlayerNameWithBadge(stats.userId, stats.playerName);
-        
-        sb.append(getRankEmoji(i + 1)).append(" ").append(playerNameWithBadge).append("\n");
+            String playerNameWithBadge = StatsService.getPlayerNameWithBadge(stats.userId, stats.playerName);
+
+            sb.append(getRankEmoji(i + 1)).append(" ").append(playerNameWithBadge).append("\n");
             sb.append("   战绩: ").append(stats.getWins()).append("胜")
                     .append(stats.getLosses()).append("负 (胜率: ")
                     .append(String.format("%.1f%%", stats.getWinRate())).append(")\n");
@@ -265,18 +265,21 @@ public class MainBot extends TelegramLongPollingBot {
 
     private void handleAdminCommands(long chatId, long userId, String text) {
         switch (text) {
+            case "/restart@shuiwodi_bot":
             case "/restart":
                 BotUtils.sendMessage(this, chatId, "🔄 机器人重启中...");
                 GameLogger.logGame(chatId, "管理员重启机器人");
                 restartBot();
                 break;
 
+            case "/stop@shuiwodi_bot":
             case "/stop":
                 BotUtils.sendMessage(this, chatId, "🛑 机器人停止中...");
                 GameLogger.logGame(chatId, "管理员停止机器人");
                 safeShutdown();
                 break;
 
+            case "/status@shuiwodi_bot":
             case "/status":
                 String status = "🤖 *机器人状态*\n" +
                         "✅ 运行中\n" +
@@ -287,6 +290,7 @@ public class MainBot extends TelegramLongPollingBot {
                 BotUtils.sendMessage(this, chatId, status);
                 break;
 
+            case "/clean@shuiwodi_bot":
             case "/clean":
                 int count = rooms.size();
                 rooms.clear();
@@ -295,16 +299,19 @@ public class MainBot extends TelegramLongPollingBot {
                 GameLogger.logGame(chatId, "管理员清理了所有房间");
                 break;
 
+            case "/reload@shuiwodi_bot":
             case "/reload":
                 int wordCount = bot.wodibot.word.WordService.reloadAndGetCount();
                 BotUtils.sendMessage(this, chatId, "🔄 词库已重新加载: " + wordCount + " 个词对");
                 GameLogger.logGame(chatId, "管理员重载词库");
                 break;
 
+            case "/config@shuiwodi_bot":
             case "/config":
                 BotUtils.sendMessage(this, chatId, BotConfig.getConfigStatus());
                 break;
 
+            case "/rooms@shuiwodi_bot":
             case "/rooms":
                 StringBuilder roomsInfo = new StringBuilder("🏠 *当前房间*\n\n");
                 roomsInfo.append("总计: ").append(rooms.size()).append(" 个\n\n");
@@ -313,6 +320,7 @@ public class MainBot extends TelegramLongPollingBot {
                 });
                 BotUtils.sendMessage(this, chatId, roomsInfo.toString());
                 break;
+            case "/stats_reload@shuiwodi_bot":
             case "/stats_reload":
                 // 重新加载胜率数据
                 StatsService.loadStats();
@@ -320,11 +328,13 @@ public class MainBot extends TelegramLongPollingBot {
                 GameLogger.logGame(chatId, "管理员重载胜率数据");
                 break;
 
+            case "/stats_clear@shuiwodi_bot":
             case "/stats_clear":
                 // 清理胜率数据（危险操作）
                 BotUtils.sendMessage(this, chatId, "⚠️ 此操作将清空所有胜率数据，确认请输入 /stats_clear_confirm");
                 break;
 
+            case "/stats_clear_confirm@shuiwodi_bot":
             case "/stats_clear_confirm":
                 // 确认清理胜率数据
                 try {
@@ -413,7 +423,7 @@ public class MainBot extends TelegramLongPollingBot {
             lockFile = new RandomAccessFile(lockFileObj, "rw");
             lockChannel = lockFile.getChannel();
             lockFileLock = lockChannel.tryLock();
-            
+
             if (lockFileLock != null) {
                 System.out.println("🔒 成功获取文件锁，确保单实例运行");
                 // 写入进程信息到锁文件
@@ -430,7 +440,7 @@ public class MainBot extends TelegramLongPollingBot {
             return false;
         }
     }
-    
+
     /**
      * 释放文件锁
      */
@@ -446,7 +456,7 @@ public class MainBot extends TelegramLongPollingBot {
             if (lockFile != null) {
                 lockFile.close();
             }
-            
+
             // 删除锁文件
             File lockFileObj = new File("bot.lock");
             if (lockFileObj.exists()) {
@@ -456,7 +466,7 @@ public class MainBot extends TelegramLongPollingBot {
             System.err.println("❌ 释放文件锁失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 检查是否已有实例运行（通过锁文件）
      */
@@ -468,7 +478,7 @@ public class MainBot extends TelegramLongPollingBot {
                 RandomAccessFile raf = new RandomAccessFile(lockFileObj, "r");
                 String content = raf.readLine();
                 raf.close();
-                
+
                 if (content != null && content.startsWith("PID: ")) {
                     String pidStr = content.substring(5).trim();
                     try {
@@ -497,18 +507,18 @@ public class MainBot extends TelegramLongPollingBot {
         }
         return false;
     }
-    
+
     /**
      * 安全关闭机器人
      */
     private void safeShutdown() {
         try {
             System.out.println("\n🤖 机器人正在安全关闭...");
-            
+
             // 1. 停止所有游戏房间
             rooms.clear();
             lastActivityTime.clear();
-            
+
             // 2. 停止清理任务
             if (cleanupScheduler != null) {
                 cleanupScheduler.shutdown();
@@ -520,29 +530,29 @@ public class MainBot extends TelegramLongPollingBot {
                     cleanupScheduler.shutdownNow();
                 }
             }
-            
+
             // 3. 停止词库重载任务
             WordReloadTask.stop();
-            
+
             // 4. 保存胜率数据
             try {
                 StatsService.forceSaveStats();
             } catch (Exception e) {
                 System.err.println("❌ 保存胜率数据失败: " + e.getMessage());
             }
-            
+
             // 5. 释放文件锁
             releaseLock();
-            
+
             // 6. 设置状态为停止
             STARTED = false;
-            
+
             System.out.println("✅ 机器人已安全关闭");
             GameLogger.logSystem("机器人关闭");
-            
+
             // 7. 退出程序
             System.exit(0);
-            
+
         } catch (Exception e) {
             System.err.println("❌ 关闭机器人时出错: " + e.getMessage());
             e.printStackTrace();
@@ -553,14 +563,14 @@ public class MainBot extends TelegramLongPollingBot {
     public static void main(String[] args) {
         try {
             System.out.println("=".repeat(50));
-            
+
             // 检查是否已有实例在运行
             if (isAlreadyRunning()) {
                 System.err.println("❌ 检测到Bot已在运行中，请不要重复启动！");
                 System.err.println("💡 如果确定没有运行，请删除 bot.lock 文件后重试");
                 System.exit(1);
             }
-            
+
             // 尝试获取文件锁
             if (!acquireLock()) {
                 System.err.println("❌ 无法启动：可能已有另一个Bot实例在运行");
@@ -681,10 +691,10 @@ public class MainBot extends TelegramLongPollingBot {
         try {
             System.out.println("🔄 重启机器人...");
             GameLogger.logSystem("管理员请求重启机器人");
-            
+
             // 1. 先发送重启通知
             BotUtils.sendMessage(this, -1, "🔄 机器人正在重启，请稍候30秒...");
-            
+
             // 2. 停止清理任务
             if (cleanupScheduler != null) {
                 cleanupScheduler.shutdown();
@@ -696,42 +706,42 @@ public class MainBot extends TelegramLongPollingBot {
                     cleanupScheduler.shutdownNow();
                 }
             }
-            
+
             // 3. 保存胜率数据
             try {
                 StatsService.forceSaveStats();
             } catch (Exception e) {
                 System.err.println("❌ 保存胜率数据失败: " + e.getMessage());
             }
-            
+
             // 4. 释放文件锁（重要！）
             releaseLock();
-            
+
             // 5. 重置启动标志
             STARTED = false;
-            
+
             // 6. 等待5秒确保资源释放
             Thread.sleep(5000);
-            
+
             // 7. 创建新实例（在新的线程中）
             new Thread(() -> {
                 try {
                     System.out.println("🚀 启动新Bot实例...");
-                    
+
                     // 等待额外的5秒确保旧实例完全停止
                     Thread.sleep(5000);
-                    
+
                     // 重新启动
-                    main(new String[]{});
-                    
+                    main(new String[] {});
+
                 } catch (Exception e) {
                     System.err.println("❌ 重启失败: " + e.getMessage());
                     e.printStackTrace();
                 }
             }).start();
-            
+
             // 8. 当前线程自然结束
-            
+
         } catch (Exception e) {
             GameLogger.logError(-1, "❌ 重启失败: " + e.getMessage());
             e.printStackTrace();
