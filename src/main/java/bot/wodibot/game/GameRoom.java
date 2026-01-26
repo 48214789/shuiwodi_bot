@@ -420,6 +420,8 @@ public class GameRoom {
                 "⏰ " + BotUtils.formatTime(config.getJoinTime()) + "后自动开始\n" +
                 "✅ 点击按钮加入游戏\n\n" +
                 "⚠️ *注意*: 首次加入需要先私聊机器人发送 `/start` \n" +
+                "⚠️ *注意*: 首次加入需要先私聊机器人发送 `/start` \n" +
+                "⚠️ *注意*: 首次加入需要先私聊机器人发送 `/start` \n" +
                 "             ⏳ 否则收不到您的身份！！！";
     }
 
@@ -497,7 +499,14 @@ public class GameRoom {
                 p.word = undercoverWord;
                 BotUtils.sendPrivateMessage(bot, p.userId,
                         "🎭 你是 *卧底*\n📝 你的词语是: *" + undercoverWord + "*\n\n" +
-                                "💡 提示: 你的词语与其他人不同，描述时要小心不要暴露");
+                                "💡 *发言提示*：\n" +
+                                "1. 描述要具体但不要太明显\n" +
+                                "2. 卧底要模仿平民的描述方式\n" +
+                                "3. 平民要寻找描述中的不一致\n" +
+                                "4. 使用 `s描述` 来发言\n\n" +
+                                "5. 使用 `s描述` 来发言\n\n" +
+                                "6. 使用 `s描述` 来发言\n\n" +
+                                "⏰ 你有" + config.getSpeakingTime() + "秒时间发言");
             } else {
                 p.undercover = false;
                 p.word = civilianWord;
@@ -521,10 +530,11 @@ public class GameRoom {
 
         // 开始第一轮发言
         state = GameState.SPEAKING;
-        sendSpeakingTips(bot);
 
         String speakingStartMsg = "🗣 *发言阶段开始*\n\n" +
                 "⏱ *发言时间*: " + config.getSpeakingTime() + " 秒\n" +
+                "📝 *发言格式*:  `s描述` \n" +
+                "📝 *发言格式*:  `s描述` \n" +
                 "📝 *发言格式*:  `s描述` \n" +
                 "🎯 *发言目标*: 描述你的词语，但不要直接说出\n\n" +
                 "📌 *重要规则*\n" +
@@ -827,7 +837,6 @@ public class GameRoom {
             });
             state = GameState.SPEAKING;
             sendAndRecordMessage(bot, "🔄 第 " + round + " 轮开始");
-            sendSpeakingTips(bot);
             scheduleTask("speaking_timeout", () -> startVote(bot),
                     config.getSpeakingTime(), TimeUnit.SECONDS);
         }
@@ -860,19 +869,6 @@ public class GameRoom {
     }
 
     /* ================= 辅助方法 ================= */
-
-    private void sendSpeakingTips(AbsSender bot) {
-        String tips = "💡 *发言提示*：\n" +
-                "1. 描述要具体但不要太明显\n" +
-                "2. 卧底要模仿平民的描述方式\n" +
-                "3. 平民要寻找描述中的不一致\n" +
-                "4. 使用 `s描述` 来发言\n\n" +
-                "⏰ 你有" + config.getSpeakingTime() + "秒时间发言";
-
-        players.values().stream()
-                .filter(p -> p.alive)
-                .forEach(p -> BotUtils.sendPrivateMessage(bot, p.userId, tips));
-    }
 
     private void showGameSummary(AbsSender bot, boolean undercoverWin) {
         StringBuilder summary = new StringBuilder("🎮 *游戏回顾*\n\n");
