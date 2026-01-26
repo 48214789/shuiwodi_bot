@@ -1,4 +1,2 @@
 # 玩家胜率统计文件
 # 格式: userId,playerName,totalGames,wins,losses,civilianGames,civilianWins,undercoverGames,undercoverWins[,lastPlayTime]
-646844463,呜啦啦,3,3,0,2,2,1,1,1769226012441
-6906663525,Make it,3,0,3,1,0,2,0,1769226012442

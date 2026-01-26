@@ -43,8 +43,8 @@ public class GameRoom {
 
     // 敏感词列表（简单示例，实际应该从配置文件加载）
     private static final String[] SENSITIVE_WORDS = {
-            "脏话", "骂人", "侮辱", "攻击", "广告", "微信", "QQ", "电话",
-            "网址", "http://", "https://", "@", "赌", "黄", "毒"
+            "脏话", "骂人", "侮辱",
+            "网址", "http://", "https://", "@"
     };
 
     public GameRoom(long chatId) {
@@ -201,7 +201,6 @@ public class GameRoom {
                     "❌ 房间已满（最多" + config.getMaxPlayers() + "人）");
             return;
         }
-        
 
         Player newPlayer = new Player(userId, userName);
         players.put(userId, newPlayer);
@@ -236,30 +235,30 @@ public class GameRoom {
      */
     private String getChampionWelcomeMessage(String playerNameWithBadge, String rankDescription) {
         String[] messages = {
-            // 1. 王者风范
-            "👑 *【至尊驾到】*  " + playerNameWithBadge + " （" + rankDescription + 
-            "），亲临游戏！全体玩家肃然起敬，恭迎王者归来！✨\n" +
-            "⚜️ 此等强者驾临，今日战局必将是传奇之战！",
-            
-            // 2. 天神降临
-            "✨ *【神级降临】* 天象异变，众星朝拜！ " + playerNameWithBadge + " （" + rankDescription + 
-            "），已降临战场！\n" +
-            "💫 服务器检测到传说级玩家，全体玩家获得【观战荣耀】Buff！",
-            
-            // 3. 宗门老祖
-            "🏯 *【老祖出关】* 隐世千年的" + rankDescription + "级大能—— " + playerNameWithBadge + 
-            "  今日破关而出！\n" +
-            "⚔️ 后生晚辈们，此乃观摩学习的千载良机，还不速来拜见！",
-            
-            // 4. 星际统帅
-            "🚀 *【统帅登陆】* 最高权限确认！银河系" + rankDescription + "级指挥官—— " + playerNameWithBadge + 
-            "  已接管游戏！\n" +
-            "🛡️ 全体玩家进入【敬畏模式】，请展现你们的最佳表现！",
-            
-            // 5. 九霄帝君
-            "🌌 *【帝君临凡】* 九霄之上，帝座移位！ " + playerNameWithBadge + " （" + rankDescription + 
-            "），携无上威压驾临！\n" +
-            "👁️ 此等存在，一举一动皆是法则，一言一语皆是天机！"
+                // 1. 王者风范
+                "👑 *【至尊驾到】*  " + playerNameWithBadge + " （" + rankDescription +
+                        "），亲临游戏！全体玩家肃然起敬，恭迎王者归来！✨\n" +
+                        "⚜️ 此等强者驾临，今日战局必将是传奇之战！",
+
+                // 2. 天神降临
+                "✨ *【神级降临】* 天象异变，众星朝拜！ " + playerNameWithBadge + " （" + rankDescription +
+                        "），已降临战场！\n" +
+                        "💫 服务器检测到传说级玩家，全体玩家获得【观战荣耀】Buff！",
+
+                // 3. 宗门老祖
+                "🏯 *【老祖出关】* 隐世千年的" + rankDescription + "级大能—— " + playerNameWithBadge +
+                        "  今日破关而出！\n" +
+                        "⚔️ 后生晚辈们，此乃观摩学习的千载良机，还不速来拜见！",
+
+                // 4. 星际统帅
+                "🚀 *【统帅登陆】* 最高权限确认！银河系" + rankDescription + "级指挥官—— " + playerNameWithBadge +
+                        "  已接管游戏！\n" +
+                        "🛡️ 全体玩家进入【敬畏模式】，请展现你们的最佳表现！",
+
+                // 5. 九霄帝君
+                "🌌 *【帝君临凡】* 九霄之上，帝座移位！ " + playerNameWithBadge + " （" + rankDescription +
+                        "），携无上威压驾临！\n" +
+                        "👁️ 此等存在，一举一动皆是法则，一言一语皆是天机！"
         };
         return messages[new Random().nextInt(messages.length)];
     }
@@ -269,20 +268,20 @@ public class GameRoom {
      */
     private String getTopThreeWelcomeMessage(String playerNameWithBadge, String rankDescription) {
         String[] messages = {
-            // 1. 一代宗师
-            "⚔️ *【宗师驾临】* 纵横江湖多年的" + rankDescription + "级强者—— " + playerNameWithBadge + 
-            "  今日再现武林！\n" +
-            "📜 其名号在玩家间传颂已久，今日有幸同场竞技，实乃幸事！",
-            
-            // 2. 殿堂元老
-            "🏛️ *【殿堂元老】* 游戏殿堂级人物 " + playerNameWithBadge + " （" + rankDescription + 
-            "），载誉归来！\n" +
-            "🎖️ 无数辉煌战绩加身，今日之战必将再添传奇！",
-            
-            // 3. 名宿登场
-            "🌟 *【一方名宿】* 久负盛名的" + rankDescription + "级玩家—— " + playerNameWithBadge + 
-            "  加入战局！\n" +
-            "🔥 其战术智慧与丰富经验，足以让任何对手心生敬畏！"
+                // 1. 一代宗师
+                "⚔️ *【宗师驾临】* 纵横江湖多年的" + rankDescription + "级强者—— " + playerNameWithBadge +
+                        "  今日再现武林！\n" +
+                        "📜 其名号在玩家间传颂已久，今日有幸同场竞技，实乃幸事！",
+
+                // 2. 殿堂元老
+                "🏛️ *【殿堂元老】* 游戏殿堂级人物 " + playerNameWithBadge + " （" + rankDescription +
+                        "），载誉归来！\n" +
+                        "🎖️ 无数辉煌战绩加身，今日之战必将再添传奇！",
+
+                // 3. 名宿登场
+                "🌟 *【一方名宿】* 久负盛名的" + rankDescription + "级玩家—— " + playerNameWithBadge +
+                        "  加入战局！\n" +
+                        "🔥 其战术智慧与丰富经验，足以让任何对手心生敬畏！"
         };
         return messages[new Random().nextInt(messages.length)];
     }

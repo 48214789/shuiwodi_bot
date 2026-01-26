@@ -67,26 +67,26 @@ public class StatsService {
         StringBuilder profile = new StringBuilder();
 
         // 顶部边框
-        profile.append("▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄\n");
-        profile.append("█         玩 家 荣 誉           █\n");
-        profile.append("█▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█\n");
+        profile.append("▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄\n");
+        profile.append("█               玩 家 荣 誉          █\n");
+        profile.append("█▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█\n");
 
         // 玩家信息
         String displayName = playerNameWithBadge.replace("👑", "").replace("🔥", "").replace("🛡️", "")
                 .replace("🎭", "").replace("🥈", "").replace("🥉", "")
                 .replace("🎮", "").replace("👤", "").replace("🌱", "").trim();
-        profile.append("█  ▶️ 玩家：").append(displayName);
+        profile.append("█         ▶️ 玩家：").append(displayName);
         // 对齐处理
         int nameLength = getDisplayLength(displayName);
         int spaces = 22 - nameLength; // 调整为22个字符宽度
         for (int i = 0; i < spaces; i++)
             profile.append(" ");
-        profile.append("█\n");
+        profile.append("\n");
 
-        profile.append("█                                 █\n");
+        profile.append("█                                 \n");
 
         // 巅峰排名（新的标题）
-        profile.append("█  🏆 巅 峰 排 名 🏆             █\n");
+        profile.append("█      🏆 巅 峰 排 名 🏆             \n");
 
         // 根据排名动态显示，冠军用★突出
         List<String> rankLines = new ArrayList<>();
@@ -189,32 +189,31 @@ public class StatsService {
             int lineSpaces = 28 - lineLength; // 调整对齐宽度
             for (int j = 0; j < lineSpaces; j++)
                 profile.append(" ");
-            profile.append("█\n");
+            profile.append("\n");
         }
 
-        profile.append("█                                 █\n");
+        profile.append("█                                 \n");
 
         // 个人荣耀展示
-        profile.append("█  ✨ 个 人 荣 耀 展 示           █\n");
+        profile.append("█      ✨ 个 人 荣 耀 展 示           \n");
 
         // 称号信息框
-        profile.append("█   ┌─ 称 号 信 息 ─┐           █\n");
+        profile.append("█   ┌─     称 号 信 息   ─┐           \n");
 
         // 称号
-        String titleText = "暂无称号";
         if (!titles.isEmpty()) {
-            titleText = titles.get(0);
-            // 如果称号太多，只显示前3个
-            if (titles.size() > 1) {
-                titleText += "等" + titles.size() + "个称号";
+            profile.append("█   │ 🎭 称号：");
+            for (String titles2 : titles) {
+                profile.append(titles2).append("\n");
             }
+        } else{
+            profile.append("█   │ 🎭 称号：").append("暂无称号");
         }
-        profile.append("█   │ 🎭 称号：").append(titleText);
-        int titleLength = getDisplayLength(titleText);
+        int titleLength = getDisplayLength("暂无称号");
         int titleSpaces = 17 - titleLength; // 框内宽度调整
         for (int i = 0; i < titleSpaces; i++)
             profile.append(" ");
-        profile.append("│           █\n");
+        profile.append("│           \n");
 
         // 状态
         profile.append("█   │ ⭐ 状态：").append(status);
@@ -222,7 +221,7 @@ public class StatsService {
         int statusSpaces = 18 - statusLength; // 框内宽度调整
         for (int i = 0; i < statusSpaces; i++)
             profile.append(" ");
-        profile.append("│           █\n");
+        profile.append("│           \n");
 
         // 连胜记录
         String streakText;
@@ -243,13 +242,13 @@ public class StatsService {
         int streakSpaces = 18 - streakLength; // 框内宽度调整
         for (int i = 0; i < streakSpaces; i++)
             profile.append(" ");
-        profile.append("│           █\n");
+        profile.append("│           \n");
 
-        profile.append("█   └───────────────┘           █\n");
-        profile.append("█                                 █\n");
+        profile.append("█   └───────────────┘           \n");
+        profile.append("█                                 \n");
 
         // 核心战绩（修改标题）
-        profile.append("█  📊 核 心 战 绩               █\n");
+        profile.append("█      📊 核 心 战 绩\n");
 
         // 总场次和胜率
         String totalInfo = String.format("总场次：%d场 | 胜率：%.1f%%",
@@ -259,7 +258,7 @@ public class StatsService {
         int totalSpaces = 25 - totalInfoLength;
         for (int i = 0; i < totalSpaces; i++)
             profile.append(" ");
-        profile.append("█\n");
+        profile.append("\n");
 
         // 平民胜率
         String civilianInfo = String.format("平民胜率：%.1f%%", stats.getCivilianWinRate());
@@ -268,7 +267,7 @@ public class StatsService {
         int civilianSpaces = 25 - civilianInfoLength;
         for (int i = 0; i < civilianSpaces; i++)
             profile.append(" ");
-        profile.append("█\n");
+        profile.append("    \n");
 
         // 卧底胜率
         String undercoverInfo = String.format("卧底胜率：%.1f%%", stats.getUndercoverWinRate());
@@ -277,10 +276,10 @@ public class StatsService {
         int undercoverSpaces = 25 - undercoverInfoLength;
         for (int i = 0; i < undercoverSpaces; i++)
             profile.append(" ");
-        profile.append("█\n");
+        profile.append("     \n");
 
         // 底部边框
-        profile.append("▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀");
+        profile.append("▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀");
 
         return profile.toString();
     }
