@@ -43,8 +43,7 @@ public class GameRoom {
 
     // 敏感词列表（简单示例，实际应该从配置文件加载）
     private static final String[] SENSITIVE_WORDS = {
-            "脏话", "骂人", "侮辱",
-            "网址", "http://", "https://", "@"
+            "http://", "https://"
     };
 
     public GameRoom(long chatId) {
@@ -826,8 +825,8 @@ public class GameRoom {
             GameLogger.logGame(chatId, "游戏结束，平民胜利");
             showGameSummary(bot, false);
 
-            // 记录胜率 - 平民胜利
-            recordGameStats(false);
+            // 记录胜率并检查新称号
+            recordGameStatsAndCheckTitles(bot, false);
 
             state = GameState.ENDED;
         } else if (aliveUndercover >= aliveCivilian) {
@@ -835,8 +834,8 @@ public class GameRoom {
             GameLogger.logGame(chatId, "游戏结束，卧底胜利");
             showGameSummary(bot, true);
 
-            // 记录胜率 - 卧底胜利
-            recordGameStats(true);
+            // 记录胜率并检查新称号
+            recordGameStatsAndCheckTitles(bot, true);
 
             state = GameState.ENDED;
         } else {
@@ -853,11 +852,9 @@ public class GameRoom {
     }
 
     /**
-     * 记录游戏结果到胜率系统
-     * 
-     * @param undercoverWin 是否为卧底胜利
+     * 记录游戏结果并检查新称号
      */
-    private void recordGameStats(boolean undercoverWin) {
+    private void recordGameStatsAndCheckTitles(AbsSender bot, boolean undercoverWin) {
         try {
             // 准备玩家数据
             Map<Long, String> playerMap = new HashMap<>();
@@ -868,13 +865,137 @@ public class GameRoom {
                 roleMap.put(p.userId, p.undercover);
             }
 
-            // 记录胜率
-            StatsService.recordGameResult(playerMap, roleMap, undercoverWin);
+            // 记录胜率并获取新称号
+            Map<Long, List<String>> newTitlesMap = StatsService.recordGameResultAndCheckTitles(playerMap, roleMap,
+                    undercoverWin);
+
+            // 通知获得新称号的玩家
+            if (!newTitlesMap.isEmpty()) {
+                notifyNewTitles(bot, newTitlesMap);
+            }
 
             GameLogger.logGame(chatId, "已记录本局游戏的胜率数据");
 
         } catch (Exception e) {
             GameLogger.logError(chatId, "记录胜率失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 通知玩家获得新称号
+     */
+    private void notifyNewTitles(AbsSender bot, Map<Long, List<String>> newTitlesMap) {
+        for (Map.Entry<Long, List<String>> entry : newTitlesMap.entrySet()) {
+            long userId = entry.getKey();
+            List<String> newTitles = entry.getValue();
+            Player player = players.get(userId);
+
+            if (player == null) {
+                continue;
+            }
+
+            // 向玩家发送私聊通知
+            String notification = createTitleNotification(player.name, newTitles);
+            BotUtils.sendPrivateMessage(bot, userId, notification);
+
+            // 在群聊中公开祝贺
+            String congratulation = createTitleCongratulations(player.name, newTitles);
+            sendAndRecordMessage(bot, congratulation);
+
+            GameLogger.logGame(chatId, "玩家 " + player.name + " 获得新称号: " +
+                    String.join(", ", newTitles));
+        }
+    }
+
+    /**
+     * 创建称号通知消息（私聊）
+     */
+    private String createTitleNotification(String playerName, List<String> newTitles) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("🎉 *恭喜获得新称号！*\n\n");
+
+        sb.append("👤 玩家: ").append(playerName).append("\n\n");
+        sb.append("🏅 *新称号列表*:\n");
+        for (String title : newTitles) {
+            sb.append("• ").append(title).append("\n");
+        }
+
+        sb.append("\n✨ *称号说明*\n");
+        for (String title : newTitles) {
+            sb.append(getTitleDescription(title)).append("\n");
+        }
+
+        sb.append("\n📱 *查看方式*\n");
+        sb.append("1. 在群聊使用 `/home` 查看个人主页\n");
+        sb.append("2. 在群聊使用 `/p` 查看个人胜率\n");
+
+        sb.append("\n🏆 继续加油，争取更多荣誉！");
+
+        return sb.toString();
+    }
+
+    /**
+     * 创建称号祝贺消息（群聊）
+     */
+    private String createTitleCongratulations(String playerName, List<String> newTitles) {
+        if (newTitles.isEmpty()) {
+            return "";
+        }
+
+        // 获得多个称号时，显示最重要的几个
+        List<String> displayedTitles = new ArrayList<>(newTitles);
+        if (displayedTitles.size() > 3) {
+            displayedTitles = displayedTitles.subList(0, 3);
+            displayedTitles.add("等");
+        }
+
+        String titleString = String.join("、", displayedTitles);
+
+        // 根据称号重要程度选择不同的祝贺语
+        String congratulation;
+        if (newTitles.contains("👑 游 戏 传 奇") || newTitles.contains("🔥 连 胜 之 神")) {
+            congratulation = "👑 *【荣耀时刻】* 恭喜 " + playerName + " 荣获 " + titleString + " 称号！\n" +
+                    "🎖️ 这份荣誉见证了你卓越的游戏表现！";
+        } else if (newTitles.contains("⚔️  双 面 精 英") || newTitles.contains("👥 全 能 战 士")) {
+            congratulation = "🌟 *【实力认证】* 恭喜 " + playerName + " 获得 " + titleString + " 称号！\n" +
+                    "⚔️ 你的全面实力得到了认可！";
+        } else {
+            congratulation = "🎉 *【称号解锁】* 恭喜 " + playerName + " 获得 " + titleString + " 称号！\n" +
+                    "🎮 你的游戏水平又上了一个台阶！";
+        }
+
+        congratulation += "\n\n📱 使用 `/home` 查看个人主页，展示你的荣誉！";
+
+        return congratulation;
+    }
+
+    /**
+     * 获取称号的详细说明
+     */
+    private String getTitleDescription(String title) {
+        switch (title) {
+            case "🎭 伪 装 大 师":
+                return "• 🎭 伪 装 大 师：卧底胜率超过75%，卧底游戏场次≥5场";
+            case "🛡️ 平 民 专 家":
+                return "• 🛡️ 平 民 专 家：平民胜率超过75%，平民游戏场次≥5场";
+            case "👥 全 能 战 士":
+                return "• 👥 全 能 战 士：双身份胜率均超过65%，各≥5场";
+            case "⚔️  双 面 精 英":
+                return "• ⚔️  双 面 精 英：双身份胜率均超过70%，各≥5场";
+            case "🔥 连 胜 之 神":
+                return "• 🔥 连 胜 之 神：达成10连胜！";
+            case "⚡ 势 不 可 挡":
+                return "• ⚡ 势 不 可 挡：达成4连胜！";
+            case "💫 初 露 锋 芒":
+                return "• 💫 初 露 锋 芒：达成1连胜！";
+            case "🎮 游 戏 达 人":
+                return "• 🎮 游 戏 达 人：累计游戏5场以上";
+            case "🏆 游 戏 强 者":
+                return "• 🏆 游 戏 强 者：累计游戏15场以上";
+            case "👑 游 戏 传 奇":
+                return "• 👑 游 戏 传 奇：累计游戏30场以上";
+            default:
+                return "• " + title + "：获得荣誉称号";
         }
     }
 

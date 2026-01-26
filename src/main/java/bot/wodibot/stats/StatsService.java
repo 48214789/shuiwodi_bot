@@ -496,6 +496,91 @@ public class StatsService {
     }
 
     /**
+     * 检查玩家是否获得了新称号
+     * 返回新增的称号列表
+     */
+    public static synchronized List<String> checkNewTitles(long userId, PlayerStats newStats) {
+        List<String> newTitles = new ArrayList<>();
+        PlayerStats oldStats = getPlayerStats(userId);
+
+        if (oldStats == null || oldStats.getTotalGames() == 0) {
+            // 第一次游戏，不检查称号
+            return newTitles;
+        }
+
+        // 检查各项条件是否达到称号要求
+        checkTitlesByCondition(userId, oldStats, newStats, newTitles);
+
+        return newTitles;
+    }
+
+    /**
+     * 检查称号条件
+     */
+    private static void checkTitlesByCondition(long userId, PlayerStats oldStats, PlayerStats newStats,
+            List<String> newTitles) {
+        // 卧底胜率 > 75% 且场次足够
+        if (oldStats.getUndercoverWinRate() <= 75 && newStats.getUndercoverWinRate() > 75 &&
+                newStats.getUndercoverGames() >= 5) {
+            newTitles.add("🎭 伪 装 大 师");
+        }
+
+        // 平民胜率 > 75% 且场次足够
+        if (oldStats.getCivilianWinRate() <= 75 && newStats.getCivilianWinRate() > 75 &&
+                newStats.getCivilianGames() >= 5) {
+            newTitles.add("🛡️ 平 民 专 家");
+        }
+
+        // 双身份胜率都 > 65%
+        if ((oldStats.getCivilianWinRate() <= 65 || oldStats.getUndercoverWinRate() <= 65) &&
+                newStats.getCivilianWinRate() > 65 && newStats.getUndercoverWinRate() > 65 &&
+                newStats.getCivilianGames() >= 5 && newStats.getUndercoverGames() >= 5) {
+            newTitles.add("👥 全 能 战 士");
+        }
+
+        // 双身份胜率都 > 70%
+        if ((oldStats.getCivilianWinRate() <= 70 || oldStats.getUndercoverWinRate() <= 70) &&
+                newStats.getCivilianWinRate() > 70 && newStats.getUndercoverWinRate() > 70 &&
+                newStats.getCivilianGames() >= 5 && newStats.getUndercoverGames() >= 5) {
+            newTitles.add("⚔️  双 面 精 英");
+        }
+
+        // 连胜称号
+        int oldMaxStreak = getMaxWinStreak(userId);
+        int currentStreak = getCurrentWinStreak(userId);
+
+        if (currentStreak >= 10 && oldMaxStreak < 10) {
+            newTitles.add("🔥 连 胜 之 神");
+        } else if (currentStreak >= 4 && oldMaxStreak < 4) {
+            newTitles.add("⚡ 势 不 可 挡");
+        } else if (currentStreak >= 1 && oldMaxStreak < 1) {
+            newTitles.add("💫 初 露 锋 芒");
+        }
+
+        // 游戏场次称号
+        if (oldStats.getTotalGames() < 5 && newStats.getTotalGames() >= 5) {
+            newTitles.add("🎮 游 戏 达 人");
+        }
+        if (oldStats.getTotalGames() < 15 && newStats.getTotalGames() >= 15) {
+            newTitles.add("🏆 游 戏 强 者");
+        }
+        if (oldStats.getTotalGames() < 30 && newStats.getTotalGames() >= 30) {
+            newTitles.add("👑 游 戏 传 奇");
+        }
+    }
+
+    /**
+     * 获取玩家的所有称号
+     */
+    public static synchronized List<String> getAllPlayerTitles(long userId) {
+        PlayerStats stats = getPlayerStats(userId);
+        if (stats == null) {
+            return new ArrayList<>();
+        }
+        return getPlayerTitles(userId, stats);
+    }
+
+    /**
      * 获取玩家在所有排行榜中的排名
      * 
      * @param userId 玩家ID
@@ -649,10 +734,12 @@ public class StatsService {
     /**
      * 记录游戏结果（修改原有方法，添加连胜记录）
      */
-    public static synchronized void recordGameResult(
+    public static synchronized Map<Long, List<String>> recordGameResultAndCheckTitles(
             Map<Long, String> players,
-            Map<Long, Boolean> playerRoles, // userId -> isUndercover
+            Map<Long, Boolean> playerRoles,
             boolean undercoverWin) {
+
+        Map<Long, List<String>> newTitlesMap = new HashMap<>();
 
         for (Map.Entry<Long, String> entry : players.entrySet()) {
             long userId = entry.getKey();
@@ -662,6 +749,16 @@ public class StatsService {
             if (isUndercover == null) {
                 GameLogger.logError(-1, "无法获取玩家角色: " + playerName);
                 continue;
+            }
+
+            // 获取更新前的统计数据
+            PlayerStats oldStats = getPlayerStats(userId);
+            if (oldStats == null) {
+                oldStats = new PlayerStats(userId, playerName);
+                playerStats.put(userId, oldStats);
+            } else {
+                // 创建旧数据的副本用于比较
+                oldStats = createStatsCopy(oldStats);
             }
 
             // 判断该玩家是否胜利
@@ -680,6 +777,14 @@ public class StatsService {
             // 记录游戏结果
             stats.recordGame(playerWin, isUndercover);
 
+            // 检查新称号
+            List<String> newTitles = checkNewTitles(userId, stats);
+            if (!newTitles.isEmpty()) {
+                newTitlesMap.put(userId, newTitles);
+                GameLogger.logPlayerAction(-1, userId, playerName,
+                        "获得新称号: " + String.join(", ", newTitles));
+            }
+
             // 更新最后游戏时间
             lastPlayTime.put(userId, System.currentTimeMillis());
 
@@ -689,8 +794,25 @@ public class StatsService {
                             " 当前连胜: " + getCurrentWinStreak(userId));
         }
 
-        // 保存到文件（修改后的方法需要保存连胜数据）
+        // 保存到文件
         saveStats();
+
+        return newTitlesMap;
+    }
+
+    /**
+     * 创建统计数据的副本
+     */
+    private static PlayerStats createStatsCopy(PlayerStats stats) {
+        PlayerStats copy = new PlayerStats(stats.userId, stats.playerName);
+        copy.setTotalGames(stats.getTotalGames());
+        copy.setWins(stats.getWins());
+        copy.setLosses(stats.getLosses());
+        copy.setCivilianGames(stats.getCivilianGames());
+        copy.setCivilianWins(stats.getCivilianWins());
+        copy.setUndercoverGames(stats.getUndercoverGames());
+        copy.setUndercoverWins(stats.getUndercoverWins());
+        return copy;
     }
 
     /**
