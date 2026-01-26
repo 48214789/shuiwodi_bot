@@ -394,7 +394,12 @@ public class GameRoom {
         InlineKeyboardButton joinButton = new InlineKeyboardButton();
         joinButton.setText("✅ 加入游戏");
         joinButton.setCallbackData("join_game");
+
+        InlineKeyboardButton startButton = new InlineKeyboardButton();
+        startButton.setText("✅ 开始游戏");
+        startButton.setCallbackData("start_now");
         row1.add(joinButton);
+        row1.add(startButton);
 
         keyboard.add(row1);
         keyboardMarkup.setKeyboard(keyboard);
@@ -512,7 +517,12 @@ public class GameRoom {
                 p.word = civilianWord;
                 BotUtils.sendPrivateMessage(bot, p.userId,
                         "👤 你是 *平民*\n📝 你的词语是: *" + civilianWord + "*\n\n" +
-                                "💡 提示: 找出描述不一致的卧底！");
+                                "💡 *发言提示*：\n" +
+                                "1. 找出描述不一致的卧底！" +
+                                "2. 使用 `s描述` 来发言\n\n" +
+                                "3. 使用 `s描述` 来发言\n\n" +
+                                "4. 使用 `s描述` 来发言\n\n" +
+                                "⏰ 你有" + config.getSpeakingTime() + "秒时间发言");
             }
             p.alive = true;
             p.spoke = "";
