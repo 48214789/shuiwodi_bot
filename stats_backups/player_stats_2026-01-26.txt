@@ -1,0 +1,2 @@
+# 玩家胜率统计文件
+# 格式: userId,playerName,totalGames,wins,losses,civilianGames,civilianWins,undercoverGames,undercoverWins[,lastPlayTime]

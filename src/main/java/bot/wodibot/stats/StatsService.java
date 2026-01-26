@@ -67,7 +67,6 @@ public class StatsService {
         StringBuilder profile = new StringBuilder();
 
         // 顶部边框
-        profile.append("▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄\n");
         profile.append("█               玩 家 荣 誉          █\n");
         profile.append("█▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█\n");
 
@@ -86,7 +85,7 @@ public class StatsService {
         profile.append("█                                 \n");
 
         // 巅峰排名（新的标题）
-        profile.append("█      🏆 巅 峰 排 名 🏆             \n");
+        profile.append("█       🏆 巅 峰 排 名 🏆           \n");
 
         // 根据排名动态显示，冠军用★突出
         List<String> rankLines = new ArrayList<>();
@@ -197,31 +196,18 @@ public class StatsService {
         // 个人荣耀展示
         profile.append("█      ✨ 个 人 荣 耀 展 示           \n");
 
-        // 称号信息框
-        profile.append("█   ┌─     称 号 信 息   ─┐           \n");
-
         // 称号
         if (!titles.isEmpty()) {
-            profile.append("█   │ 🎭 称号：");
-            for (String titles2 : titles) {
-                profile.append(titles2).append("\n");
+            profile.append("█   │ 🎭 称号：").append(titles.get(0)).append("\n");
+            for (int i = 1; i < titles.size(); i++) {
+                profile.append("█                          ").append(titles.get(i)).append("\n");
             }
-        } else{
-            profile.append("█   │ 🎭 称号：").append("暂无称号");
+        } else {
+            profile.append("█   │    🎭 称号：").append("暂无称号\n");
         }
-        int titleLength = getDisplayLength("暂无称号");
-        int titleSpaces = 17 - titleLength; // 框内宽度调整
-        for (int i = 0; i < titleSpaces; i++)
-            profile.append(" ");
-        profile.append("│           \n");
 
         // 状态
-        profile.append("█   │ ⭐ 状态：").append(status);
-        int statusLength = getDisplayLength(status);
-        int statusSpaces = 18 - statusLength; // 框内宽度调整
-        for (int i = 0; i < statusSpaces; i++)
-            profile.append(" ");
-        profile.append("│           \n");
+        profile.append("█   │ ⭐ 状态：").append(status).append("\n");
 
         // 连胜记录
         String streakText;
@@ -237,14 +223,8 @@ public class StatsService {
         } else {
             streakText = "无连胜记录";
         }
-        profile.append("█   │ ⚡ 连胜：").append(streakText);
-        int streakLength = getDisplayLength(streakText);
-        int streakSpaces = 18 - streakLength; // 框内宽度调整
-        for (int i = 0; i < streakSpaces; i++)
-            profile.append(" ");
-        profile.append("│           \n");
+        profile.append("█   │ ⚡ 连胜：").append(streakText).append("\n");
 
-        profile.append("█   └───────────────┘           \n");
         profile.append("█                                 \n");
 
         // 核心战绩（修改标题）
