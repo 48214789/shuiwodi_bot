@@ -725,7 +725,11 @@ public class GameRoom {
         cancelAllTasks();
 
         if (votes.isEmpty()) {
-            sendAndRecordMessage(bot, "⚠️ 本轮无人投票，重新发言");
+            String speakingStartMsg = "⚠️ 本轮无人投票，重新发言\n\n🗣 *发言阶段开始*\n" +
+                    "⏱ *发言时间*: " + config.getSpeakingTime() + " 秒\n" +
+                    "📝 *发言格式*:  `s描述` \n" +
+                    "⏰ 倒计时开始...";
+            sendAndRecordMessage(bot, speakingStartMsg);
             resetRoundForNewSpeech();
             scheduleTask("speaking_timeout", () -> startVote(bot),
                     config.getSpeakingTime(), TimeUnit.SECONDS);
@@ -776,7 +780,13 @@ public class GameRoom {
             for (Long playerId : eliminated) {
                 sb.append("• ").append(players.get(playerId).name).append("\n");
             }
-            sb.append("重新发言");
+            sb.append("重新发言\n\n");
+
+            String speakingStartMsg = "🗣 *发言阶段开始*\n" +
+                    "⏱ *发言时间*: " + config.getSpeakingTime() + " 秒\n" +
+                    "📝 *发言格式*:  `s描述` \n" +
+                    "⏰ 倒计时开始...";
+            sb.append(speakingStartMsg);
 
             sendAndRecordMessage(bot, sb.toString());
             GameLogger.logGame(chatId, "第" + round + "轮投票平票，重新发言");
@@ -845,7 +855,14 @@ public class GameRoom {
                 p.voted = false;
             });
             state = GameState.SPEAKING;
-            sendAndRecordMessage(bot, "🔄 第 " + round + " 轮开始");
+
+            String speakingStartMsg = "⚠️ *未结束，游戏继续\n" +
+                    "🔄 第 " + round + " 轮开始*\n\n" +
+                    "🗣 *发言阶段开始*\n" +
+                    "⏱ *发言时间*: " + config.getSpeakingTime() + " 秒\n" +
+                    "📝 *发言格式*:  `s描述` \n" +
+                    "⏰ 倒计时开始...";
+            sendAndRecordMessage(bot, speakingStartMsg);
             scheduleTask("speaking_timeout", () -> startVote(bot),
                     config.getSpeakingTime(), TimeUnit.SECONDS);
         }
